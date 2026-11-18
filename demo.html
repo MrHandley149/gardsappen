@@ -27,6 +27,11 @@
         .btn-emergency { width: 100%; min-height: 80px; background-color: #d32f2f; color: #fff; font-size: 24px; font-weight: 900; letter-spacing: 2px; border: none; border-radius: 16px; margin-top: 24px; box-shadow: 0 4px 0 #b71c1c; }
         .btn-emergency:active { transform: translateY(4px); box-shadow: 0 0 0 #b71c1c; }
         
+        /* Navigering Tillbaka */
+        .top-nav { margin-bottom: 24px; }
+        .btn-back { background: none; border: none; font-weight: 700; font-size: 14px; color: #666; padding: 8px 0; text-transform: uppercase; letter-spacing: 0.5px; }
+        .btn-back:hover { color: #111; }
+        
         /* Formulär & Listor */
         .form-group { margin-bottom: 24px; }
         label { display: block; font-size: 12px; font-weight: 700; text-transform: uppercase; color: #666; margin-bottom: 8px; letter-spacing: 0.5px; }
@@ -47,7 +52,7 @@
         .marquee-content { display: inline-block; animation: marquee 15s linear infinite; }
         @keyframes marquee { 0% { transform: translateX(100vw); } 100% { transform: translateX(-100%); } }
 
-        /* Toast Notifications (Inga alerts!) */
+        /* Toast Notifications */
         #toast { position: fixed; top: -100px; left: 50%; transform: translateX(-50%); background-color: #111; color: white; padding: 16px 24px; border-radius: 30px; font-weight: 700; z-index: 9999; transition: top 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275); box-shadow: 0 4px 12px rgba(0,0,0,0.15); }
         #toast.show { top: 24px; }
     </style>
@@ -76,6 +81,10 @@
     <main id="view-ungdom" class="view" style="padding-top: 60px;">
         <div class="info-marquee">
             <div class="marquee-content" id="ungdom-banner">VÄLKOMMEN TILL GÅRN! ÖPPET TILL 22:00 IKVÄLL • 20:00 STARTAR FIFA-TURNERINGEN</div>
+        </div>
+        
+        <div class="top-nav">
+            <button class="btn-back" onclick="switchView('view-start')">← Tillbaka till menyn</button>
         </div>
 
         <header class="clean-header" style="text-align: center; margin-bottom: 40px;">
@@ -140,27 +149,23 @@
                 </div>
             </div>
         </section>
-        
-        <button class="btn-secondary" style="margin-top: 48px; border: none; color: #666;" onclick="switchView('view-start')">Avbryt Demo</button>
     </main>
 
     <!-- VY: FRITIDSLEDARE -->
     <main id="view-ledare" class="view">
-        <header class="clean-header" style="display: flex; justify-content: space-between; align-items: flex-end;">
-            <div>
-                <p class="subtitle">Gårn</p>
-                <h1 style="font-size: 32px;">Hej Ledare</h1>
-            </div>
-            <!-- QR Skanner Knapp -->
-            <button style="background: none; border: none; padding: 8px;" onclick="showToast('Öppnar kameran för att skanna ungdomens kort...')">
-                <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="#111" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect><path d="M7 7h.01M17 7h.01M7 17h.01M17 17h.01"></path></svg>
-            </button>
+        <div class="top-nav">
+            <button class="btn-back" onclick="switchView('view-start')">← Tillbaka till menyn</button>
+        </div>
+
+        <header class="clean-header">
+            <p class="subtitle">Gårn</p>
+            <h1 style="font-size: 32px;">Hej Ledare</h1>
         </header>
 
         <button class="btn-emergency" onclick="startEmergency()">NÖDUTRYMNING</button>
 
         <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-top: 24px;">
-            <button class="btn-secondary" style="margin-top: 0;" onclick="showToast('Visar din QR-kod så ungdomar kan checka in själva')">Visa min QR</button>
+            <button class="btn-secondary" style="margin-top: 0;" onclick="showToast('Visar QR-kod så ungdomar kan checka in själva')">Visa inchecknings-QR</button>
             <button class="btn-secondary" style="margin-top: 0;" onclick="showToast('Manuell incheckningslista öppnad')">Manuell Incheck</button>
         </div>
 
@@ -188,7 +193,7 @@
             </ul>
         </section>
 
-        <!-- Kiosk och Banner hantering separerad -->
+        <!-- Kiosk och Banner hantering -->
         <section style="margin-top: 40px;">
             <h2 style="font-size: 18px; font-weight: 800; border-bottom: 2px solid #eee; padding-bottom: 8px; margin-bottom: 16px;">Hantera Gården</h2>
             <div style="display: flex; flex-direction: column; gap: 12px;">
@@ -198,7 +203,18 @@
             </div>
         </section>
 
+        <!-- Öppningsrutin -->
         <section style="margin-top: 40px; background: #f9f9f9; padding: 24px; border-radius: 12px; border: 2px solid #111;">
+            <h2 style="font-size: 20px; font-weight: 800; margin-bottom: 16px;">Öppningsrutin</h2>
+            <ul class="clean-list" style="margin-bottom: 24px;">
+                <li style="border-bottom: 1px solid #ccc;"><label style="width: 100%; display: flex; align-items: center; gap: 16px; font-size: 18px; cursor: pointer; margin: 0;"><input type="checkbox" style="width: 24px; min-height: 24px;"> Larma av & tänd</label></li>
+                <li style="border-bottom: 1px solid #ccc;"><label style="width: 100%; display: flex; align-items: center; gap: 16px; font-size: 18px; cursor: pointer; margin: 0;"><input type="checkbox" style="width: 24px; min-height: 24px;"> Starta kioskkassan</label></li>
+            </ul>
+            <button class="btn-primary" onclick="showToast('Gården är nu öppnad!')">Alla punkter klara - Öppna Gården</button>
+        </section>
+
+        <!-- Stängningsrutin -->
+        <section style="margin-top: 24px; background: #f9f9f9; padding: 24px; border-radius: 12px; border: 2px solid #111;">
             <h2 style="font-size: 20px; font-weight: 800; margin-bottom: 16px;">Stängningsrutin</h2>
             <ul class="clean-list" style="margin-bottom: 24px;">
                 <li style="border-bottom: 1px solid #ccc;"><label style="width: 100%; display: flex; align-items: center; gap: 16px; font-size: 18px; cursor: pointer; margin: 0;"><input type="checkbox" style="width: 24px; min-height: 24px;"> Töm papperskorgar</label></li>
@@ -206,12 +222,14 @@
             </ul>
             <button class="btn-primary" onclick="showToast('Gården stängd! Alla utloggade och köer rensade.')">Alla punkter klara - Stäng Gården</button>
         </section>
-
-        <button class="btn-secondary" style="margin-top: 48px; border: none; color: #666;" onclick="switchView('view-start')">Avbryt Demo</button>
     </main>
 
     <!-- VY: CHEF -->
     <main id="view-chef" class="view">
+        <div class="top-nav">
+            <button class="btn-back" onclick="switchView('view-start')">← Tillbaka till menyn</button>
+        </div>
+
         <header class="clean-header">
             <p class="subtitle">Överblick</p>
             <h1 style="font-size: 32px;">Statistik & Personal</h1>
@@ -253,14 +271,15 @@
                 </li>
             </ul>
         </section>
-        
-        <button class="btn-secondary" style="margin-top: 48px; border: none; color: #666;" onclick="switchView('view-start')">Avbryt Demo</button>
     </main>
 
     <!-- VY: FÖRÄLDER -->
     <main id="view-foralder" class="view">
-        <div style="display: flex; flex-direction: column; justify-content: center; align-items: center; text-align: center; min-height: 80vh;">
-            <!-- BankID inspirerad sköld-ikon -->
+        <div class="top-nav">
+            <button class="btn-back" onclick="switchView('view-start')">← Tillbaka till menyn</button>
+        </div>
+        
+        <div style="display: flex; flex-direction: column; justify-content: center; align-items: center; text-align: center; min-height: 60vh;">
             <svg class="w-16 h-16 text-blue-600 mb-6" style="width: 64px; height: 64px; color: #1d4ed8; margin-bottom: 24px;" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"></path></svg>
             
             <h1 style="font-size: 32px; font-weight: 900; margin-bottom: 16px;">Gårdskort</h1>
@@ -276,8 +295,6 @@
             </div>
 
             <button class="btn-primary" style="background-color: #1d4ed8; border-color: #1e3a8a; max-width: 320px;" onclick="showToast('Gårdskortet är nu digitalt signerat och giltigt!')">Signera med BankID</button>
-            
-            <button class="btn-secondary" style="margin-top: 48px; max-width: 320px; border: none; color: #666;" onclick="switchView('view-start')">Avbryt Demo</button>
         </div>
     </main>
 
