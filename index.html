@@ -5,6 +5,12 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Gårdsappen | Framtidens Fritidsgård</title>
     <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        /* Enkel CSS för att hantera övergångar i bildkarusellen */
+        .slide { transition: opacity 0.5s ease-in-out; }
+        .slide-hidden { opacity: 0; pointer-events: none; z-index: 0; }
+        .slide-visible { opacity: 1; pointer-events: auto; z-index: 10; }
+    </style>
 </head>
 <body class="bg-white text-gray-900 font-sans antialiased selection:bg-black selection:text-white">
     <div class="min-h-screen">
@@ -22,7 +28,9 @@
         <!-- Hero Section -->
         <section class="py-20 px-6 md:px-12 max-w-7xl mx-auto flex flex-col md:flex-row items-center gap-16">
             <div class="flex-1">
-                <span class="inline-block py-1 px-3 border-2 border-black rounded-full text-xs font-bold uppercase tracking-wider mb-6">Testa vår interaktiva live-demo</span>
+                <a href="demo.html" class="inline-block py-1 px-3 border-2 border-black rounded-full text-xs font-bold uppercase tracking-wider mb-6 hover:bg-black hover:text-white transition-colors cursor-pointer">
+                    Testa vår interaktiva live-demo
+                </a>
                 <h1 class="text-5xl md:text-7xl font-black leading-tight tracking-tighter mb-8">
                     Mer tid till ungdomarna.<br>Mindre tid på papper.
                 </h1>
@@ -34,37 +42,89 @@
                     <a href="#kontakt" class="bg-transparent text-black px-8 py-4 font-bold text-lg border-2 border-black hover:bg-gray-100 transition-all">Kontakt</a>
                 </div>
             </div>
+            
+            <!-- Karusell med mockups -->
             <div class="flex-1 bg-gray-50 border-4 border-black p-8 rounded-3xl transform rotate-1 hidden md:block">
-                <!-- Mockup -->
-                <div class="bg-white border-2 border-black rounded-2xl overflow-hidden shadow-[8px_8px_0px_0px_rgba(0,0,0,1)]">
-                    <div class="border-b-2 border-black bg-gray-100 p-4 flex justify-between items-center">
-                        <span class="font-bold text-sm uppercase">Live Demo</span>
-                        <div class="flex gap-2">
-                            <div class="w-3 h-3 rounded-full bg-black"></div>
-                            <div class="w-3 h-3 rounded-full bg-black"></div>
+                <div class="bg-white border-2 border-black rounded-2xl overflow-hidden shadow-[8px_8px_0px_0px_rgba(0,0,0,1)] relative h-[360px]" id="mockup-carousel">
+                    
+                    <!-- Slide 1: Ungdom -->
+                    <div class="slide slide-visible absolute inset-0 bg-white">
+                        <div class="border-b-2 border-black bg-gray-100 p-4 flex justify-between items-center">
+                            <span class="font-bold text-sm uppercase">Gårdsappen Demo - Ungdom</span>
+                        </div>
+                        <div class="p-6">
+                            <h3 class="text-2xl font-black mb-4">Mina Aktiviteter</h3>
+                            <div class="border-2 border-black p-4 mb-4">
+                                <p class="font-bold uppercase text-xs text-gray-500 mb-1">Pågår just nu</p>
+                                <p class="text-lg font-bold">Biljardbord 1</p>
+                                <p class="text-sm mt-2"><span class="bg-green-100 text-green-800 px-2 py-1 font-bold">LEDIGT</span></p>
+                            </div>
+                            <div class="border-2 border-black p-4">
+                                <p class="font-bold uppercase text-xs text-gray-500 mb-1">Mina Lag</p>
+                                <p class="text-lg font-bold">Gula Igelkottarna</p>
+                                <p class="text-sm mt-2 font-mono font-bold">Pinkod: 8472</p>
+                            </div>
                         </div>
                     </div>
-                    <div class="p-6">
-                        <h3 class="text-2xl font-black mb-4">Mina Aktiviteter</h3>
-                        <div class="border-2 border-black p-4 mb-4">
-                            <p class="font-bold uppercase text-xs text-gray-500 mb-1">Pågår just nu</p>
-                            <p class="text-lg font-bold">Biljardbord 1</p>
-                            <p class="text-sm mt-2"><span class="bg-green-100 text-green-800 px-2 py-1 font-bold">LEDIGT</span></p>
+
+                    <!-- Slide 2: Ledare -->
+                    <div class="slide slide-hidden absolute inset-0 bg-white">
+                        <div class="border-b-2 border-black bg-gray-100 p-4 flex justify-between items-center">
+                            <span class="font-bold text-sm uppercase">Gårdsappen Demo - Ledare</span>
                         </div>
-                        <div class="border-2 border-black p-4">
-                            <p class="font-bold uppercase text-xs text-gray-500 mb-1">Mina Lag</p>
-                            <p class="text-lg font-bold">Gula Igelkottarna</p>
-                            <p class="text-sm mt-2 font-mono font-bold">Pinkod: 8472</p>
+                        <div class="p-6">
+                            <h3 class="text-2xl font-black mb-4 text-red-600">NÖDSTOPP</h3>
+                            <button class="w-full bg-red-600 text-white font-black py-4 border-2 border-red-800 mb-6 uppercase tracking-widest">Utrym Gården</button>
+                            <div class="flex justify-between items-center border-b-2 border-black pb-2 mb-4">
+                                <span class="font-bold">Incheckade just nu</span>
+                                <span class="bg-black text-white px-3 py-1 rounded-full font-bold">24</span>
+                            </div>
+                            <p class="text-gray-600 font-medium">Filip Filipsson <span class="float-right text-sm">18:42</span></p>
                         </div>
                     </div>
+
+                    <!-- Slide 3: Chef -->
+                    <div class="slide slide-hidden absolute inset-0 bg-white">
+                        <div class="border-b-2 border-black bg-gray-100 p-4 flex justify-between items-center">
+                            <span class="font-bold text-sm uppercase">Gårdsappen Demo - Chef</span>
+                        </div>
+                        <div class="p-6">
+                            <h3 class="text-2xl font-black mb-4">Statistik (Denna vecka)</h3>
+                            <div class="grid grid-cols-2 gap-4 mb-4">
+                                <div class="border-2 border-black p-4 text-center">
+                                    <p class="text-3xl font-black">412</p>
+                                    <p class="text-xs font-bold uppercase text-gray-500">Besökare</p>
+                                </div>
+                                <div class="border-2 border-black p-4 text-center">
+                                    <p class="text-3xl font-black">4</p>
+                                    <p class="text-xs font-bold uppercase text-gray-500">Gårdar</p>
+                                </div>
+                            </div>
+                            <button class="w-full bg-black text-white font-bold py-2 border-2 border-black">Hantera Personal</button>
+                        </div>
+                    </div>
+
+                    <!-- Slide 4: Förälder -->
+                    <div class="slide slide-hidden absolute inset-0 bg-white">
+                        <div class="border-b-2 border-black bg-gray-100 p-4 flex justify-between items-center">
+                            <span class="font-bold text-sm uppercase">Gårdsappen Demo - Förälder</span>
+                        </div>
+                        <div class="p-6 text-center">
+                            <svg class="w-12 h-12 mx-auto mb-4 text-blue-600" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"></path></svg>
+                            <h3 class="text-2xl font-black mb-2">Gårdskort</h3>
+                            <p class="font-medium text-gray-600 mb-6">Godkänn ditt barns gårdskort digitalt.</p>
+                            <button class="w-full bg-blue-600 text-white font-bold py-4 border-2 border-blue-800 rounded">Signera med BankID</button>
+                        </div>
+                    </div>
+
                 </div>
             </div>
         </section>
 
         <!-- Information om Demon -->
-        <div class="bg-black text-white py-6 text-center px-4">
-            <p class="font-bold text-lg max-w-4xl mx-auto">
-                👋 Välkommen till vår demo! Klicka på rubrikerna nedan för att hoppa direkt in i appen och se hur den ser ut från olika perspektiv. <span class="text-gray-400">All data i demon är fiktiv och ingenting sparas när du stänger sidan.</span>
+        <div class="bg-black text-white py-6 text-center px-4 border-y-2 border-black">
+            <p class="font-bold text-lg max-w-4xl mx-auto tracking-wide">
+                Klicka på rubrikerna nedan för att hoppa direkt in i appen och se hur den ser ut från olika perspektiv. <span class="text-gray-400">All data i demon är fiktiv och ingenting sparas när du stänger sidan.</span>
             </p>
         </div>
 
@@ -119,3 +179,148 @@
                             För Föräldrar <span class="inline-block transform group-hover:translate-x-2 transition-transform">&rarr;</span>
                         </a>
                         <ul class="space-y-4 font-medium text-lg text-gray-700">
+                            <li class="flex items-start"><svg class="w-6 h-6 mr-3 text-black shrink-0 mt-1" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M5 13l4 4L19 7"></path></svg> Godkänn gårdskortet med bank-id, inga glömda lappar</li>
+                            <li class="flex items-start"><svg class="w-6 h-6 mr-3 text-black shrink-0 mt-1" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M5 13l4 4L19 7"></path></svg> Snabb tillgång till aktuella öppettider och kontaktuppgifter</li>
+                            <li class="flex items-start"><svg class="w-6 h-6 mr-3 text-black shrink-0 mt-1" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M5 13l4 4L19 7"></path></svg> Uppdatera viktig information och allergier på sekunder</li>
+                        </ul>
+                    </div>
+
+                </div>
+            </div>
+        </section>
+
+        <!-- IT & Säkerhet -->
+        <section id="sakerhet" class="py-24 px-6 md:px-12 max-w-7xl mx-auto">
+            <div class="text-center mb-16">
+                <div class="flex justify-center"><svg class="w-12 h-12 mb-4 text-black" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path></svg></div>
+                <h2 class="text-4xl md:text-5xl font-black tracking-tight">Byggt för Svensk offentlig sektor</h2>
+            </div>
+            <div class="grid md:grid-cols-3 gap-8">
+                <div class="border-2 border-black p-8">
+                    <h4 class="text-2xl font-black mb-4">Datasuveränitet</h4>
+                    <p class="font-medium text-gray-700">All data lagras och bearbetas exklusivt på servrar inom Sveriges gränser. Ingen information skickas till tredjeland.</p>
+                </div>
+                <div class="border-2 border-black p-8 bg-black text-white">
+                    <h4 class="text-2xl font-black mb-4">Strikt GDPR</h4>
+                    <p class="font-medium text-gray-300">Systemet utför automatisk gallring. Konton raderas permanent den 31/12 det år ungdomen fyller 18. Historik anonymiseras automatiskt.</p>
+                </div>
+                <div class="border-2 border-black p-8">
+                    <h4 class="text-2xl font-black mb-4">Driftsäkerhet</h4>
+                    <p class="font-medium text-gray-700">Appen är offline-first (PWA). Går nätet ner fortsätter närvaron och köerna att fungera lokalt tills anslutningen återupprättas.</p>
+                </div>
+            </div>
+        </section>
+
+        <!-- Prismodell -->
+        <section id="priser" class="py-24 bg-gray-50 border-y-2 border-black">
+            <div class="max-w-4xl mx-auto px-6 md:px-12 text-center">
+                <h2 class="text-4xl md:text-5xl font-black mb-8 tracking-tight">Transparant Prismodell</h2>
+                <p class="text-xl font-medium text-gray-600 mb-12">Inga dolda licenser per användare eller ungdom. Ni betalar enbart för kapaciteten ni använder.</p>
+                
+                <div class="bg-white border-4 border-black p-12 max-w-2xl mx-auto space-y-8">
+                    <div class="flex flex-col md:flex-row justify-between items-center border-b-2 border-gray-200 pb-8 gap-6">
+                        <div class="text-left">
+                            <h4 class="text-2xl font-black">Uppstartskostnad</h4>
+                            <p class="text-gray-500 font-medium mt-1">Installation, onboarding & konfiguration</p>
+                        </div>
+                        <div class="text-right">
+                            <span class="text-sm font-bold uppercase tracking-wider text-gray-500">Baserat på</span>
+                            <p class="text-2xl font-black">Antal gårdar</p>
+                        </div>
+                    </div>
+                    <div class="flex flex-col md:flex-row justify-between items-center border-b-2 border-gray-200 pb-8 gap-6">
+                        <div class="text-left">
+                            <h4 class="text-2xl font-black">Löpande Avgift</h4>
+                            <p class="text-gray-500 font-medium mt-1">SLA, drift, support och uppdateringar</p>
+                        </div>
+                        <div class="text-right">
+                            <span class="text-sm font-bold uppercase tracking-wider text-gray-500">Månadsavgift</span>
+                            <p class="text-2xl font-black">Per aktiv gård</p>
+                        </div>
+                    </div>
+                    <div class="flex flex-col md:flex-row justify-between items-center gap-6">
+                        <div class="text-left">
+                            <h4 class="text-2xl font-black">Utbildning</h4>
+                            <p class="text-gray-500 font-medium mt-1">Vi utbildar två superanvändare i systemet</p>
+                        </div>
+                        <div class="text-right">
+                            <span class="text-sm font-bold uppercase tracking-wider text-gray-500">Ingår i start</span>
+                            <p class="text-2xl font-black">Kvalitetssäkrat</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Kontakt -->
+        <section id="kontakt" class="py-24 px-6 md:px-12 max-w-7xl mx-auto grid md:grid-cols-2 gap-16">
+            <div>
+                <h2 class="text-4xl md:text-5xl font-black mb-6 tracking-tight">Nyfiken? Hör av dig.</h2>
+                <p class="text-xl font-medium text-gray-600 mb-12">
+                    Vi visar gärna upp hur appen fungerar live. Boka en demo så pratar vi om hur Gårdsappen kan underlätta för just er kommun.
+                </p>
+                
+                <div class="space-y-6">
+                    <a href="tel:0763967717" class="flex items-center text-xl font-bold hover:underline">
+                        <svg class="w-5 h-5 mr-3" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M22 16.92v3a2 2 0 01-2.18 2 19.79 19.79 0 01-8.63-3.07 19.5 19.5 0 01-6-6 19.79 19.79 0 01-3.07-8.67A2 2 0 014.11 2h3a2 2 0 012 1.72 12.84 12.84 0 00.7 2.81 2 2 0 01-.45 2.11L8.09 9.91a16 16 0 006 6l1.27-1.27a2 2 0 012.11-.45 12.84 12.84 0 002.81.7A2 2 0 0122 16.92z"></path></svg>
+                        076 396 7717
+                    </a>
+                    <a href="mailto:mattias.handley@gmail.com" class="flex items-center text-xl font-bold hover:underline break-all">
+                        <svg class="w-5 h-5 mr-3 shrink-0" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"></path><path d="M22 6l-10 7L2 6"></path></svg>
+                        mattias.handley@gmail.com
+                    </a>
+                </div>
+            </div>
+            
+            <div class="bg-gray-50 border-2 border-black p-8">
+                <h3 class="text-2xl font-black mb-6">Boka Demo</h3>
+                <form class="space-y-4" onsubmit="event.preventDefault(); alert('Tack! Vi hör av oss snart.');">
+                    <div>
+                        <label class="block text-sm font-bold uppercase mb-2">Namn</label>
+                        <input type="text" class="w-full border-2 border-black p-3 focus:outline-none focus:ring-4 focus:ring-gray-200" placeholder="Förnamn Efternamn">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-bold uppercase mb-2">Kommun / Organisation</label>
+                        <input type="text" class="w-full border-2 border-black p-3 focus:outline-none focus:ring-4 focus:ring-gray-200" placeholder="T.ex. Sollefteå Kommun">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-bold uppercase mb-2">E-post</label>
+                        <input type="email" class="w-full border-2 border-black p-3 focus:outline-none focus:ring-4 focus:ring-gray-200" placeholder="din@epost.se">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-bold uppercase mb-2">Meddelande (Frivilligt)</label>
+                        <textarea class="w-full border-2 border-black p-3 focus:outline-none focus:ring-4 focus:ring-gray-200 h-32" placeholder="Har ni några specifika frågor inför demon?"></textarea>
+                    </div>
+                    <button type="submit" class="w-full bg-black text-white font-bold text-lg py-4 border-2 border-black hover:bg-white hover:text-black transition-colors">
+                        Skicka Förfrågan
+                    </button>
+                </form>
+            </div>
+        </section>
+
+        <!-- Footer -->
+        <footer class="bg-black text-white py-12 px-6 text-center">
+            <p class="font-bold text-2xl uppercase tracking-widest mb-4">Gårdsappen</p>
+            <p class="text-gray-400 font-medium">Framtidens Fritidsgård. Byggd i Sverige.</p>
+        </footer>
+    </div>
+
+    <!-- Script för bildkarusellen -->
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const slides = document.querySelectorAll('.slide');
+            let currentSlide = 0;
+
+            setInterval(() => {
+                slides[currentSlide].classList.remove('slide-visible');
+                slides[currentSlide].classList.add('slide-hidden');
+                
+                currentSlide = (currentSlide + 1) % slides.length;
+                
+                slides[currentSlide].classList.remove('slide-hidden');
+                slides[currentSlide].classList.add('slide-visible');
+            }, 4000);
+        });
+    </script>
+</body>
+</html>
