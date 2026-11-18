@@ -12,7 +12,6 @@
         /* Ruting */
         .view { display: none; min-height: 100vh; padding: 24px 16px; padding-bottom: 80px; }
         .view.active { display: block; }
-        .hidden { display: none !important; }
         
         /* Header & Typografi */
         .clean-header { margin-bottom: 32px; }
@@ -59,15 +58,17 @@
     <div id="toast">Uppdaterad!</div>
 
     <!-- VY: LANDNING (Val av roll för demo) -->
-    <main id="view-start" class="view active" style="display: flex; flex-direction: column; justify-content: center; align-items: center; text-align: center;">
-        <h1 style="font-size: 40px; font-weight: 900; margin-bottom: 8px;">Gårdsappen Demo</h1>
-        <p style="color: #666; font-weight: 500; margin-bottom: 48px;">Välj vilken vy du vill testa.</p>
-        
-        <div style="width: 100%; max-width: 300px; display: flex; flex-direction: column; gap: 16px;">
-            <button class="btn-primary" onclick="switchView('view-ungdom')">Gå in som Ungdom</button>
-            <button class="btn-secondary" onclick="switchView('view-ledare')">Gå in som Fritidsledare</button>
-            <button class="btn-secondary" onclick="switchView('view-chef')">Gå in som Chef</button>
-            <button class="btn-secondary" style="border-color: #2e7d32; color: #2e7d32;" onclick="switchView('view-foralder')">Gå in som Förälder</button>
+    <main id="view-start" class="view active">
+        <div style="display: flex; flex-direction: column; justify-content: center; align-items: center; text-align: center; min-height: 80vh;">
+            <h1 style="font-size: 40px; font-weight: 900; margin-bottom: 8px;">Gårdsappen Demo</h1>
+            <p style="color: #666; font-weight: 500; margin-bottom: 48px;">Välj vilken vy du vill testa.</p>
+            
+            <div style="width: 100%; max-width: 300px; display: flex; flex-direction: column; gap: 16px;">
+                <button class="btn-primary" onclick="switchView('view-ungdom')">Gå in som Ungdom</button>
+                <button class="btn-secondary" onclick="switchView('view-ledare')">Gå in som Fritidsledare</button>
+                <button class="btn-secondary" onclick="switchView('view-chef')">Gå in som Chef</button>
+                <button class="btn-secondary" style="border-color: #2e7d32; color: #2e7d32;" onclick="switchView('view-foralder')">Gå in som Förälder</button>
+            </div>
         </div>
     </main>
 
@@ -257,25 +258,27 @@
     </main>
 
     <!-- VY: FÖRÄLDER -->
-    <main id="view-foralder" class="view" style="display: flex; flex-direction: column; justify-content: center; align-items: center; text-align: center;">
-        <!-- BankID inspirerad sköld-ikon -->
-        <svg class="w-16 h-16 text-blue-600 mb-6" style="width: 64px; height: 64px; color: #1d4ed8; margin-bottom: 24px;" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"></path></svg>
-        
-        <h1 style="font-size: 32px; font-weight: 900; margin-bottom: 16px;">Gårdskort</h1>
-        <p style="font-size: 18px; color: #444; font-weight: 500; margin-bottom: 40px; max-width: 320px;">
-            Godkänn gårdskortet med BankID, inga glömda lappar.
-        </p>
+    <main id="view-foralder" class="view">
+        <div style="display: flex; flex-direction: column; justify-content: center; align-items: center; text-align: center; min-height: 80vh;">
+            <!-- BankID inspirerad sköld-ikon -->
+            <svg class="w-16 h-16 text-blue-600 mb-6" style="width: 64px; height: 64px; color: #1d4ed8; margin-bottom: 24px;" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"></path></svg>
+            
+            <h1 style="font-size: 32px; font-weight: 900; margin-bottom: 16px;">Gårdskort</h1>
+            <p style="font-size: 18px; color: #444; font-weight: 500; margin-bottom: 40px; max-width: 320px;">
+                Godkänn gårdskortet med BankID, inga glömda lappar.
+            </p>
 
-        <div style="width: 100%; max-width: 320px; text-align: left; background: #f9f9f9; padding: 16px; border-radius: 12px; margin-bottom: 32px; border: 2px solid #eee;">
-            <p style="font-size: 12px; font-weight: 700; text-transform: uppercase; color: #666; margin-bottom: 4px;">Ungdom</p>
-            <p style="font-size: 18px; font-weight: 700; margin-bottom: 16px;">Filip Filipsson (2010)</p>
-            <p style="font-size: 12px; font-weight: 700; text-transform: uppercase; color: #666; margin-bottom: 4px;">Din roll</p>
-            <p style="font-size: 16px; font-weight: 500;">Vårdnadshavare 1</p>
+            <div style="width: 100%; max-width: 320px; text-align: left; background: #f9f9f9; padding: 16px; border-radius: 12px; margin-bottom: 32px; border: 2px solid #eee;">
+                <p style="font-size: 12px; font-weight: 700; text-transform: uppercase; color: #666; margin-bottom: 4px;">Ungdom</p>
+                <p style="font-size: 18px; font-weight: 700; margin-bottom: 16px;">Filip Filipsson (2010)</p>
+                <p style="font-size: 12px; font-weight: 700; text-transform: uppercase; color: #666; margin-bottom: 4px;">Din roll</p>
+                <p style="font-size: 16px; font-weight: 500;">Vårdnadshavare 1</p>
+            </div>
+
+            <button class="btn-primary" style="background-color: #1d4ed8; border-color: #1e3a8a; max-width: 320px;" onclick="showToast('Gårdskortet är nu digitalt signerat och giltigt!')">Signera med BankID</button>
+            
+            <button class="btn-secondary" style="margin-top: 48px; max-width: 320px; border: none; color: #666;" onclick="switchView('view-start')">Avbryt Demo</button>
         </div>
-
-        <button class="btn-primary" style="background-color: #1d4ed8; border-color: #1e3a8a; max-width: 320px;" onclick="showToast('Gårdskortet är nu digitalt signerat och giltigt!')">Signera med BankID</button>
-        
-        <button class="btn-secondary" style="margin-top: 48px; border: none; color: #666;" onclick="switchView('view-start')">Avbryt Demo</button>
     </main>
 
     <!-- VY: UTRYMNING (Låst skärm för ledare) -->
