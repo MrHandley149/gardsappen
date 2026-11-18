@@ -3,7 +3,19 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Gårdsappen | Framtidens Fritidsgård</title>
+    <!-- Klassisk SEO -->
+    <meta name="description" content="Gårdsappen är Sveriges modernaste plattform för fritidsgårdar. Utvecklad av fritidsledare för att minimera administration och tidsspill.">
+    <meta name="keywords" content="fritidsgård, fritidsledare, närvarosystem, app för fritidsgård, kommunal verksamhet, gdpr säker app, digitalt gårdskort">
+    <meta name="author" content="Gårdsappen">
+    
+    <!-- Open Graph (För snygga länkar i sociala medier och iMessage) -->
+    <meta property="og:title" content="Gårdsappen | Framtidens Fritidsgård">
+    <meta property="og:description" content="Utvecklad av fritidsledare från grunden för att minimera administration. Nu kan ni fokusera på ungdomarna!">
+    <meta property="og:type" content="website">
+    <meta property="og:url" content="https://gardsappen.vercel.app/">
+    
+    <!-- Talar om för robotar att de får indexera sidan -->
+    <meta name="robots" content="index, follow">
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
         /* Enkel CSS för att hantera övergångar i bildkarusellen */
@@ -210,7 +222,60 @@
                 </div>
             </div>
         </section>
+<!-- FAQ / Frågor och Svar -->
+        <section id="faq" class="py-24 px-6 md:px-12 max-w-4xl mx-auto">
+            <h2 class="text-4xl md:text-5xl font-black mb-12 tracking-tight text-center">Vanliga Frågor</h2>
+            
+            <div class="space-y-6">
+                <!-- Fråga 1 -->
+                <div class="border-2 border-black p-6 hover:bg-gray-50 transition-colors">
+                    <h3 class="text-xl font-black mb-3">Måste ungdomarna ladda ner något från App Store eller Google Play?</h3>
+                    <p class="font-medium text-gray-700">
+                        Nej. Gårdsappen är en modern webbapp (PWA). Ungdomarna surfar till en länk (eller skannar en QR-kod på gården) och loggar in säkert via SMS. Sedan väljer de bara "Lägg till på startskärmen" i mobilen. Ingen nedladdningströskel och noll krångel med lösenord.
+                    </p>
+                </div>
 
+                <!-- Fråga 2 -->
+                <div class="border-2 border-black p-6 hover:bg-gray-50 transition-colors">
+                    <h3 class="text-xl font-black mb-3">Hur hanteras GDPR och personuppgifter?</h3>
+                    <p class="font-medium text-gray-700">
+                        Systemet utför stenhård, automatisk datagallring. Den 31 december det år ungdomen fyller 18 år raderas kontot och alla personuppgifter permanent. Detsamma gäller vid 12 månaders inaktivitet. Historik från besök anonymiseras automatiskt och sparas endast som ren statistik för kommunen. All data stannar i Sverige.
+                    </p>
+                </div>
+
+                <!-- Fråga 3 -->
+                <div class="border-2 border-black p-6 hover:bg-gray-50 transition-colors">
+                    <h3 class="text-xl font-black mb-3">Vad händer om internet går ner på fritidsgården?</h3>
+                    <p class="font-medium text-gray-700">
+                        Appen är byggd med en "offline-first"-arkitektur. Det betyder att kärnfunktioner som närvarolistor, kösystem och nödutrymning fortsätter att fungera lokalt på fritidsledarens telefon. När nätet kommer tillbaka synkroniseras allt tyst i bakgrunden.
+                    </p>
+                </div>
+
+                <!-- Fråga 4 -->
+                <div class="border-2 border-black p-6 hover:bg-gray-50 transition-colors">
+                    <h3 class="text-xl font-black mb-3">Hur fungerar incheckningen i praktiken?</h3>
+                    <p class="font-medium text-gray-700">
+                        Första incheckningen för kvällen sker genom att ungdomen skannar ledarens QR-kod. Därefter tar ett smart Geofence (GPS-zon) över. Rör sig ungdomen mer än 50 meter från gården loggas den ut automatiskt. Kommer de tillbaka loggas de in igen. Ledarna får en exakt, realtidsuppdaterad närvarolista utan manuellt pappersarbete.
+                    </p>
+                </div>
+
+                <!-- Fråga 5 -->
+                <div class="border-2 border-black p-6 hover:bg-gray-50 transition-colors">
+                    <h3 class="text-xl font-black mb-3">Ingår utbildning för personalen?</h3>
+                    <p class="font-medium text-gray-700">
+                        Ja. Appen är designad för att ha en minimal inlärningskurva (noll redundans, inga onödiga knappar). I uppstartskostnaden ingår utbildning av två superanvändare per kommun som sedan utan problem kan introducera systemet för resten av arbetsgruppen.
+                    </p>
+                </div>
+
+                <!-- Fråga 6 -->
+                <div class="border-2 border-black p-6 hover:bg-gray-50 transition-colors">
+                    <h3 class="text-xl font-black mb-3">Hur funkar den digitala kiosken?</h3>
+                    <p class="font-medium text-gray-700">
+                        Fritidsledarna styr kioskens utbud och priser i realtid från sin vy. Ungdomarna lägger önskade varor i sin digitala varukorg och klickar på "Öppna Swish". Telefonens Swish-app öppnas då automatiskt, förifylld med fritidsgårdens rätta mottagarnummer och exakt belopp.
+                    </p>
+                </div>
+            </div>
+        </section>
         <!-- Prismodell -->
         <section id="priser" class="py-24 bg-gray-50 border-y-2 border-black">
             <div class="max-w-4xl mx-auto px-6 md:px-12 text-center">
