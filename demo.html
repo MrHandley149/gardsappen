@@ -2,752 +2,368 @@
 <html lang="sv">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Gårdsappen MVP</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gårdsappen Demo</title>
     <style>
-        /* ==========================================================================
-           GRUNDLÄGGANDE RESET OCH TYPOGRAFI (Mattias Handley UX)
-           ========================================================================== */
-        * {
-            box-sizing: border-box;
-            margin: 0;
-            padding: 0;
-            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-        }
-
-        body {
-            background-color: #ffffff;
-            color: #111111;
-            padding: 24px;
-            -webkit-font-smoothing: antialiased;
-            overflow-x: hidden;
-        }
-
-        /* Visningshantering */
-        .view {
-            display: none;
-            flex-direction: column;
-            gap: 32px;
-            min-height: 100vh;
-            padding-bottom: 60px;
-        }
-        .view.active {
-            display: flex;
-            animation: fadeIn 0.3s ease;
-        }
-        .hidden {
-            display: none !important;
-        }
-
-        @keyframes fadeIn {
-            from { opacity: 0; transform: translateY(10px); }
-            to { opacity: 1; transform: translateY(0); }
-        }
-
-        /* Typografi */
-        h1 { font-size: 32px; font-weight: 800; letter-spacing: -0.5px; margin-bottom: 8px; line-height: 1.1; }
-        h2 { font-size: 20px; font-weight: 700; margin-bottom: 16px; border-bottom: 2px solid #eeeeee; padding-bottom: 8px; }
-        h3 { font-size: 18px; font-weight: 700; margin-bottom: 8px; }
-        .subtitle { font-size: 14px; color: #666666; text-transform: uppercase; letter-spacing: 1px; font-weight: 600; }
-        .text-red { color: #d32f2f; }
-        p { line-height: 1.5; }
-
-        /* ==========================================================================
-           KOMPONENTER (Knappar, Kort, Piller, Inputs)
-           ========================================================================== */
-        /* Knappar (Min 48px) */
-        .btn {
-            width: 100%;
-            min-height: 56px;
-            font-size: 18px;
-            font-weight: 700;
-            border-radius: 8px;
-            cursor: pointer;
-            display: inline-flex;
-            align-items: center;
-            justify-content: center;
-            border: none;
-            transition: transform 0.1s;
-            margin-bottom: 12px;
-        }
-        .btn:active { transform: scale(0.98); }
-        .btn:disabled { opacity: 0.5; cursor: not-allowed; }
+        /* Mattias Handley UX - Clean, crisp, high contrast */
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; }
+        body { background-color: #ffffff; color: #111111; -webkit-font-smoothing: antialiased; }
         
-        .btn-primary { background-color: #111111; color: #ffffff; }
-        .btn-secondary { background-color: transparent; color: #111111; border: 2px solid #111111; }
-        .btn-emergency { background-color: #d32f2f; color: #ffffff; min-height: 80px; font-size: 24px; font-weight: 800; letter-spacing: 1px; border-radius: 12px; }
-        .btn-small { min-height: 40px; width: auto; padding: 0 16px; font-size: 14px; margin-bottom: 0; }
-        .btn-back { background: none; border: none; color: #666; font-size: 14px; font-weight: 700; cursor: pointer; text-align: left; padding: 8px 0; margin-bottom: -16px; min-height: auto; width: auto; display: inline-block; }
-
-        /* Formulär & Inputs */
-        .input {
-            width: 100%;
-            min-height: 56px;
-            padding: 0 16px;
-            font-size: 16px;
-            background-color: #f5f5f5;
-            border: none;
-            border-radius: 8px;
-            margin-bottom: 12px;
-            outline: none;
-            font-family: inherit;
-        }
-        textarea.input { padding: 16px; resize: vertical; min-height: 100px; }
-        .input:focus { background-color: #eeeeee; }
+        /* Ruting */
+        .view { display: none; min-height: 100vh; padding: 24px 16px; padding-bottom: 80px; }
+        .view.active { display: block; }
+        .hidden { display: none !important; }
         
-        .form-row { display: flex; gap: 12px; }
-        .form-row > * { flex: 1; }
-
-        /* Status Piller */
-        .status-pill {
-            padding: 6px 12px;
-            border-radius: 20px;
-            font-size: 12px;
-            font-weight: 700;
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
-            display: inline-flex;
-            align-items: center;
-            justify-content: center;
-        }
-        .pill-green { background-color: #e8f5e9; color: #2e7d32; }
-        .pill-red { background-color: #ffebee; color: #d32f2f; }
-        .pill-grey { background-color: #eeeeee; color: #666666; }
+        /* Header & Typografi */
+        .clean-header { margin-bottom: 32px; }
+        .clean-header h1 { font-size: 32px; font-weight: 900; letter-spacing: -0.5px; line-height: 1.1; }
+        .subtitle { font-size: 14px; font-weight: 600; color: #666; text-transform: uppercase; letter-spacing: 1px; margin-top: 4px; }
         
-        /* Grid och listor */
-        .info-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; background-color: #f9f9f9; border-radius: 12px; padding: 24px; }
-        .info-item { display: flex; flex-direction: column; gap: 4px; }
-        .info-label { font-size: 12px; color: #666; text-transform: uppercase; letter-spacing: 0.5px; }
-        .info-value { font-size: 16px; font-weight: 600; }
-
-        .clean-list { list-style: none; display: flex; flex-direction: column; }
-        .clean-list li { display: flex; justify-content: space-between; align-items: center; padding: 16px 0; border-bottom: 1px solid #eeeeee; }
-        .list-title { font-size: 18px; font-weight: 600; }
-        .list-meta { font-size: 14px; color: #666; }
-
-        /* Kort */
-        .card { border: 2px solid #eeeeee; border-radius: 12px; padding: 24px; margin-bottom: 16px; }
+        /* Knappar */
+        button { font-family: inherit; cursor: pointer; transition: transform 0.1s; }
+        button:active { transform: scale(0.98); }
+        .btn-primary { width: 100%; min-height: 56px; background-color: #111; color: #fff; font-size: 16px; font-weight: 700; border: 2px solid #111; border-radius: 12px; margin-top: 16px; }
+        .btn-secondary { width: 100%; min-height: 56px; background-color: transparent; color: #111; font-size: 16px; font-weight: 700; border: 2px solid #111; border-radius: 12px; margin-top: 16px; }
+        .btn-danger { width: 100%; min-height: 56px; background-color: #d32f2f; color: #fff; font-size: 16px; font-weight: 700; border: 2px solid #d32f2f; border-radius: 12px; margin-top: 16px; }
+        .btn-emergency { width: 100%; min-height: 80px; background-color: #d32f2f; color: #fff; font-size: 24px; font-weight: 900; letter-spacing: 2px; border: none; border-radius: 16px; margin-top: 24px; box-shadow: 0 4px 0 #b71c1c; }
+        .btn-emergency:active { transform: translateY(4px); box-shadow: 0 0 0 #b71c1c; }
         
-        /* Marquee */
-        .marquee-container {
-            overflow: hidden;
-            background: #111;
-            color: #fff;
-            padding: 12px 0;
-            margin: -24px -24px 24px -24px; /* Bryt body-padding */
-            font-weight: 600;
-        }
-        .marquee {
-            display: inline-block;
-            white-space: nowrap;
-            animation: marquee 15s linear infinite;
-        }
+        /* Formulär & Listor */
+        .form-group { margin-bottom: 24px; }
+        label { display: block; font-size: 12px; font-weight: 700; text-transform: uppercase; color: #666; margin-bottom: 8px; letter-spacing: 0.5px; }
+        input, select, textarea { width: 100%; min-height: 56px; padding: 16px; font-size: 16px; font-weight: 500; border: 2px solid #eeeeee; border-radius: 12px; background-color: #f9f9f9; outline: none; transition: border-color 0.2s; }
+        input:focus, select:focus, textarea:focus { border-color: #111; background-color: #fff; }
+        
+        .clean-list { list-style: none; }
+        .clean-list li { display: flex; justify-content: space-between; align-items: center; padding: 16px 0; border-bottom: 2px solid #f5f5f5; }
+        .visitor-name { font-size: 18px; font-weight: 700; }
+        .visitor-meta { font-size: 14px; font-weight: 500; color: #666; margin-top: 2px; }
+        
+        /* Gårdskort UI */
+        .status-pill { display: inline-flex; align-items: center; justify-content: center; padding: 8px 16px; border-radius: 20px; font-size: 14px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.5px; }
+        .status-approved { background-color: #e8f5e9; color: #2e7d32; }
+        
+        /* Rullande Banner */
+        .info-marquee { background-color: #111; color: #fff; padding: 12px 0; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; font-size: 12px; white-space: nowrap; overflow: hidden; position: fixed; top: 0; left: 0; width: 100%; z-index: 100; }
+        .marquee-content { display: inline-block; animation: marquee 15s linear infinite; }
         @keyframes marquee { 0% { transform: translateX(100vw); } 100% { transform: translateX(-100%); } }
 
-        /* Toast Notiser (Ersätter alert) */
-        #toast-container {
-            position: fixed;
-            top: 20px;
-            left: 50%;
-            transform: translateX(-50%);
-            z-index: 9999;
-            display: flex;
-            flex-direction: column;
-            gap: 10px;
-            width: 90%;
-            max-width: 400px;
-            pointer-events: none;
-        }
-        .toast {
-            background: #111;
-            color: #fff;
-            padding: 16px;
-            border-radius: 8px;
-            text-align: center;
-            font-weight: 600;
-            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
-            animation: slideDown 0.3s forwards;
-            pointer-events: auto;
-        }
-        .toast.hide { animation: slideUp 0.3s forwards; }
-        @keyframes slideDown { from { transform: translateY(-100%); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
-        @keyframes slideUp { from { transform: translateY(0); opacity: 1; } to { transform: translateY(-100%); opacity: 0; } }
-
-        /* Modals */
-        .modal-overlay {
-            position: fixed; top: 0; left: 0; right: 0; bottom: 0;
-            background: rgba(0,0,0,0.8);
-            z-index: 1000;
-            display: flex; align-items: center; justify-content: center;
-            padding: 24px;
-        }
-        .modal-content {
-            background: #fff;
-            width: 100%; max-width: 400px;
-            border-radius: 12px;
-            padding: 24px;
-        }
-
-        /* Flytande Varukorg */
-        .cart-drawer {
-            position: fixed; bottom: 0; left: 0; right: 0;
-            background-color: #111111;
-            padding: 24px 24px 32px 24px;
-            border-radius: 20px 20px 0 0;
-            z-index: 100;
-            transform: translateY(100%);
-            transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1);
-        }
-        .cart-drawer.visible { transform: translateY(0); }
-
-        /* Utrymningsläge */
-        .emergency-mode { background-color: #d32f2f; color: white; padding-top: 24px; }
-        .emergency-mode h1, .emergency-mode h2, .emergency-mode .subtitle { color: white; border-color: rgba(255,255,255,0.3); }
-        .evac-list { background-color: white; border-radius: 12px; overflow: hidden; color: #111; margin-top: 24px; }
-        .evac-list li { padding: 24px 16px; border-bottom: 1px solid #eee; cursor: pointer; transition: background-color 0.2s; }
-        .evac-list li.safe { background-color: #e8f5e9; color: #2e7d32; text-decoration: line-through; }
-        
-        /* Stängnings/Öppningsrutin */
-        .routine-box { background-color: #f9f9f9; border: 2px solid #111; border-radius: 12px; padding: 24px; margin-bottom: 16px; }
-        .checkbox-label { display: flex; align-items: center; gap: 16px; cursor: pointer; width: 100%; font-size: 18px; font-weight: 500; }
-        .routine-checkbox { width: 28px; height: 28px; accent-color: #111; flex-shrink: 0; }
-
+        /* Toast Notifications (Inga alerts!) */
+        #toast { position: fixed; top: -100px; left: 50%; transform: translateX(-50%); background-color: #111; color: white; padding: 16px 24px; border-radius: 30px; font-weight: 700; z-index: 9999; transition: top 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275); box-shadow: 0 4px 12px rgba(0,0,0,0.15); }
+        #toast.show { top: 24px; }
     </style>
 </head>
 <body>
+    
+    <!-- Global Toast Notis -->
+    <div id="toast">Uppdaterad!</div>
 
-    <!-- Toast Container (Ersätter alert) -->
-    <div id="toast-container"></div>
-
-    <!-- QR Modal -->
-    <div id="qr-modal" class="modal-overlay hidden">
-        <div class="modal-content">
-            <h2 style="text-align: center; border: none;">Incheckning QR</h2>
-            <p style="text-align: center; margin-bottom: 24px;">Låt ungdomen skanna koden för att checka in/ut.</p>
-            <img src="https://placehold.co/300x300/111111/ffffff?text=MOCK+QR" alt="QR Kod" style="width: 100%; height: auto; border-radius: 8px;">
-            <button class="btn btn-secondary" style="margin-top: 24px;" onclick="closeModal('qr-modal')">Stäng</button>
+    <!-- VY: LANDNING (Val av roll för demo) -->
+    <main id="view-start" class="view active" style="display: flex; flex-direction: column; justify-content: center; align-items: center; text-align: center;">
+        <h1 style="font-size: 40px; font-weight: 900; margin-bottom: 8px;">Gårdsappen Demo</h1>
+        <p style="color: #666; font-weight: 500; margin-bottom: 48px;">Välj vilken vy du vill testa.</p>
+        
+        <div style="width: 100%; max-width: 300px; display: flex; flex-direction: column; gap: 16px;">
+            <button class="btn-primary" onclick="switchView('view-ungdom')">Gå in som Ungdom</button>
+            <button class="btn-secondary" onclick="switchView('view-ledare')">Gå in som Fritidsledare</button>
+            <button class="btn-secondary" onclick="switchView('view-chef')">Gå in som Chef</button>
+            <button class="btn-secondary" style="border-color: #2e7d32; color: #2e7d32;" onclick="switchView('view-foralder')">Gå in som Förälder</button>
         </div>
-    </div>
-
-    <!-- ==========================================
-         LANDING PAGE (Vy-väljare)
-         ========================================== -->
-    <main id="view-landing" class="view active">
-        <header style="margin-top: 40px; margin-bottom: 16px;">
-            <p class="subtitle">Testmiljö</p>
-            <h1>Gårdsappen MVP</h1>
-            <p style="color: #666; margin-top: 8px;">Välj en roll nedan för att testa de olika vyerna.</p>
-        </header>
-
-        <button class="btn btn-primary" onclick="switchView('view-ungdom')">Logga in som Ungdom</button>
-        <button class="btn btn-primary" onclick="switchView('view-ledare')">Logga in som Fritidsledare</button>
-        <button class="btn btn-primary" onclick="switchView('view-chef')">Logga in som Chef</button>
-        <button class="btn btn-secondary" onclick="switchView('view-foralder')">Testa Föräldravy</button>
     </main>
 
-    <!-- ==========================================
-         UNGDOMSVY ("Mitt Gårdskort")
-         ========================================== -->
-    <main id="view-ungdom" class="view" style="padding-bottom: 120px;">
-        <div class="marquee-container">
-            <div class="marquee">Välkommen till Gårn! Öppet idag till 22:00. Baka pepparkakshus startar 19:00 i caféet.</div>
+    <!-- VY: UNGDOM -->
+    <main id="view-ungdom" class="view" style="padding-top: 60px;">
+        <div class="info-marquee">
+            <div class="marquee-content" id="ungdom-banner">VÄLKOMMEN TILL GÅRN! ÖPPET TILL 22:00 IKVÄLL • 20:00 STARTAR FIFA-TURNERINGEN</div>
         </div>
 
-        <button class="btn-back" onclick="switchView('view-landing')">← Byt roll (Gå tillbaka)</button>
-        
-        <header style="text-align: center; margin-top: 16px;">
-            <p class="subtitle">Mitt Gårdskort</p>
-            <h1 style="font-size: 40px;">Filip Filipsson</h1>
-            <div style="margin-top: 16px;">
-                <span class="status-pill pill-green">KORT GODKÄNT</span>
-            </div>
+        <header class="clean-header" style="text-align: center; margin-bottom: 40px;">
+            <p class="subtitle">Digitalt Gårdskort</p>
+            <h1 style="font-size: 40px; margin-top: 8px;">Filip Filipsson</h1>
+            <div class="status-pill status-approved" style="margin-top: 16px;">KORT GODKÄNT</div>
+            <p style="font-size: 14px; font-weight: 700; color: #d32f2f; margin-top: 16px;">Allergi: Jordnötter</p>
         </header>
 
-        <section class="info-grid">
-            <div class="info-item">
-                <span class="info-label">Ålder</span>
-                <span class="info-value">15</span>
+        <!-- Resurser & Kö -->
+        <section style="margin-bottom: 40px;">
+            <h2 style="font-size: 20px; font-weight: 800; border-bottom: 2px solid #eee; padding-bottom: 8px; margin-bottom: 16px;">Boka Spel</h2>
+            
+            <div style="border: 2px solid #eee; border-radius: 12px; padding: 16px; margin-bottom: 16px;">
+                <div style="display: flex; justify-content: space-between; align-items: center;">
+                    <h3 style="font-size: 18px; font-weight: 700;">Biljardbord 1</h3>
+                    <span style="background: #e8f5e9; color: #2e7d32; padding: 4px 8px; border-radius: 8px; font-size: 12px; font-weight: 800;">LEDIGT</span>
+                </div>
+                <button class="btn-primary" style="min-height: 48px;" onclick="showToast('Du står nu i kö!')">Ställ dig i kö</button>
             </div>
-            <div class="info-item">
-                <span class="info-label">Kön</span>
-                <span class="info-value">Kille</span>
-            </div>
-            <div class="info-item" style="grid-column: 1 / -1;">
-                <span class="info-label">Allergier & Viktigt att veta</span>
-                <span class="info-value text-red">Nötallergi</span>
+
+            <div style="border: 2px solid #eee; border-radius: 12px; padding: 16px;">
+                <div style="display: flex; justify-content: space-between; align-items: center;">
+                    <h3 style="font-size: 18px; font-weight: 700;">PS5 (Fifa)</h3>
+                    <span style="background: #ffebee; color: #d32f2f; padding: 4px 8px; border-radius: 8px; font-size: 12px; font-weight: 800;">UPPTAGEN (14 MIN)</span>
+                </div>
+                <button class="btn-secondary" style="min-height: 48px;" onclick="showToast('Du är nr 2 i kön')">Ställ dig i kö</button>
             </div>
         </section>
 
-        <section>
-            <h2>Boka spel & Resurser</h2>
-            <div class="card">
-                <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 16px;">
-                    <h3>Biljardbord 1</h3>
-                    <span class="status-pill pill-red">Upptagen (sedan 12 min)</span>
-                </div>
-                <button class="btn btn-secondary" onclick="showToast('Du står nu i kö! Din köplats: 3. Vi plingar när det är din tur.')">Ställ dig i kö</button>
-            </div>
-            <div class="card">
-                <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 16px;">
-                    <h3>Pingisbord</h3>
-                    <span class="status-pill pill-green">Ledig</span>
-                </div>
-                <button class="btn btn-primary" onclick="showToast('Du har bokat pingisbordet!')">Boka direkt</button>
-            </div>
-        </section>
-
-        <section>
-            <h2>Aktiviteter (Lag)</h2>
-            <div class="card">
-                <h3>Baka Pepparkakshus</h3>
-                <p style="color:#666; margin-bottom:16px;">Ikväll 19:00 • Max 3 per lag</p>
-                
-                <div id="team-actions" class="form-row">
-                    <button class="btn btn-secondary" onclick="document.getElementById('team-actions').classList.add('hidden'); document.getElementById('team-pin-view').classList.remove('hidden'); showToast('Lag Gula Igelkottarna skapat!');">Skapa lag</button>
-                    <button class="btn btn-secondary" onclick="document.getElementById('team-actions').classList.add('hidden'); document.getElementById('team-join-view').classList.remove('hidden');">Har pinkod</button>
-                </div>
-                
-                <div id="team-pin-view" class="hidden">
-                    <p class="subtitle">Ditt lag är skapat!</p>
-                    <p style="font-size: 24px; font-weight: 800; margin: 8px 0;">Gula Igelkottarna</p>
-                    <p>Be vänner knappa in pinkod: <strong style="font-size:24px;">4921</strong></p>
-                </div>
-
-                <div id="team-join-view" class="hidden">
-                    <input type="number" placeholder="Ange 4 siffror" class="input" id="join-pin-input">
-                    <button class="btn btn-primary" onclick="showToast('Du är nu med i laget!'); document.getElementById('team-join-view').innerHTML='<p>Du är med i laget!</p>';">Gå med i lag</button>
+        <!-- Lag & Aktiviteter -->
+        <section style="margin-bottom: 40px;">
+            <h2 style="font-size: 20px; font-weight: 800; border-bottom: 2px solid #eee; padding-bottom: 8px; margin-bottom: 16px;">Aktuellt</h2>
+            <div style="background: #f9f9f9; border-radius: 12px; padding: 16px;">
+                <h3 style="font-size: 18px; font-weight: 700; margin-bottom: 4px;">Fifa Turnering</h3>
+                <p style="font-size: 14px; color: #666; margin-bottom: 16px;">Ikväll 20:00 • Max 2 per lag</p>
+                <div style="display: flex; gap: 8px;">
+                    <button class="btn-primary" style="margin-top: 0; flex: 1;" onclick="showToast('Lag skapat! Koden är 8472')">Skapa lag</button>
+                    <button class="btn-secondary" style="margin-top: 0; flex: 1;" onclick="showToast('Ange pinkod för att gå med')">Har pinkod</button>
                 </div>
             </div>
         </section>
 
+        <!-- Kiosk & Önskemål -->
         <section>
-            <h2>Kiosken</h2>
+            <h2 style="font-size: 20px; font-weight: 800; border-bottom: 2px solid #eee; padding-bottom: 8px; margin-bottom: 16px;">Kiosken</h2>
+            <ul class="clean-list" style="margin-bottom: 24px;">
+                <li>
+                    <div>
+                        <div class="visitor-name">Fanta Exotic</div>
+                        <div class="visitor-meta">15 kr</div>
+                    </div>
+                    <button class="btn-secondary" style="width: auto; min-height: 40px; padding: 0 16px; margin-top: 0;" onclick="showToast('Tillagd i korgen')">+ Lägg till</button>
+                </li>
+            </ul>
+            
+            <div style="background: #111; color: white; padding: 16px; border-radius: 12px;">
+                <h3 style="font-size: 16px; font-weight: 700; margin-bottom: 8px;">Saknar du något?</h3>
+                <div style="display: flex; gap: 8px;">
+                    <input type="text" placeholder="Önska vara..." style="background: #333; color: white; border: none; min-height: 48px; flex: 2;">
+                    <button class="btn-primary" style="background: white; color: black; margin-top: 0; flex: 1; min-height: 48px;" onclick="showToast('Önskemål skickat till ledarna!')">Önska</button>
+                </div>
+            </div>
+        </section>
+        
+        <button class="btn-secondary" style="margin-top: 48px; border: none; color: #666;" onclick="switchView('view-start')">Avbryt Demo</button>
+    </main>
+
+    <!-- VY: FRITIDSLEDARE -->
+    <main id="view-ledare" class="view">
+        <header class="clean-header" style="display: flex; justify-content: space-between; align-items: flex-end;">
+            <div>
+                <p class="subtitle">Gårn</p>
+                <h1 style="font-size: 32px;">Hej Ledare</h1>
+            </div>
+            <!-- QR Skanner Knapp -->
+            <button style="background: none; border: none; padding: 8px;" onclick="showToast('Öppnar kameran för att skanna ungdomens kort...')">
+                <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="#111" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect><path d="M7 7h.01M17 7h.01M7 17h.01M17 17h.01"></path></svg>
+            </button>
+        </header>
+
+        <button class="btn-emergency" onclick="startEmergency()">NÖDUTRYMNING</button>
+
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-top: 24px;">
+            <button class="btn-secondary" style="margin-top: 0;" onclick="showToast('Visar din QR-kod så ungdomar kan checka in själva')">Visa min QR</button>
+            <button class="btn-secondary" style="margin-top: 0;" onclick="showToast('Manuell incheckningslista öppnad')">Manuell Incheck</button>
+        </div>
+
+        <section style="margin-top: 40px;">
+            <div style="display: flex; justify-content: space-between; align-items: baseline; border-bottom: 2px solid #eee; padding-bottom: 8px; margin-bottom: 16px;">
+                <h2 style="font-size: 18px; font-weight: 800;">Incheckade just nu</h2>
+                <span style="background: #111; color: #fff; padding: 4px 12px; border-radius: 20px; font-weight: 700;">2</span>
+            </div>
+            
             <ul class="clean-list">
                 <li>
                     <div>
-                        <div class="list-title">Fanta Exotic</div>
-                        <div class="list-meta">15 kr</div>
+                        <div class="visitor-name">Filip Filipsson</div>
+                        <div class="visitor-meta">Incheckad 18:42</div>
                     </div>
-                    <button class="btn btn-secondary btn-small" onclick="addToCart('Fanta Exotic', 15)">+ Lägg till</button>
+                    <button style="background:none; border:none; color: #d32f2f; font-weight: 700;" onclick="showToast('Avstängningsmeny öppnad för Filip')">Stäng av</button>
                 </li>
                 <li>
                     <div>
-                        <div class="list-title">Pan Pizza</div>
-                        <div class="list-meta">25 kr</div>
+                        <div class="visitor-name">Anna Andersson</div>
+                        <div class="visitor-meta">Incheckad 19:15</div>
                     </div>
-                    <button class="btn btn-secondary btn-small" onclick="addToCart('Pan Pizza', 25)">+ Lägg till</button>
+                    <button style="background:none; border:none; color: #d32f2f; font-weight: 700;" onclick="showToast('Avstängningsmeny öppnad för Anna')">Stäng av</button>
                 </li>
             </ul>
         </section>
 
-        <section>
-            <h2>Önskelådan</h2>
-            <div class="form-row">
-                <input type="text" id="wish-input" placeholder="T.ex. Buldaknudlar" class="input" style="margin-bottom:0;">
-                <button class="btn btn-primary" style="margin-bottom:0;" onclick="submitWish()">Önska</button>
+        <!-- Kiosk och Banner hantering separerad -->
+        <section style="margin-top: 40px;">
+            <h2 style="font-size: 18px; font-weight: 800; border-bottom: 2px solid #eee; padding-bottom: 8px; margin-bottom: 16px;">Hantera Gården</h2>
+            <div style="display: flex; flex-direction: column; gap: 12px;">
+                <button class="btn-secondary" style="margin-top: 0; text-align: left; padding: 0 16px;" onclick="showToast('Kioskhanterare öppnad. Här kan du ändra utbud och priser.')">Hantera Kiosken</button>
+                <button class="btn-secondary" style="margin-top: 0; text-align: left; padding: 0 16px;" onclick="showToast('Skriv ny text för informationsbannern som rullar i ungdomsvyn')">Uppdatera Info-banner (Ungdomsvy)</button>
+                <button class="btn-secondary" style="margin-top: 0; text-align: left; padding: 0 16px;" onclick="showToast('Formulär för att skapa ny aktivitet öppnat')">Skapa Aktivitet</button>
             </div>
         </section>
 
-        <!-- Flytande varukorg -->
-        <div id="cart-drawer" class="cart-drawer">
-            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
-                <span id="cart-count" style="font-weight: 700; color: #fff;">0 artiklar</span>
-                <span id="cart-total" style="font-size: 24px; font-weight: 800; color: #fff;">0 kr</span>
-            </div>
-            <button class="btn btn-primary" style="background-color: #fff; color: #111;" onclick="checkout()">Öppna Swish</button>
-        </div>
+        <section style="margin-top: 40px; background: #f9f9f9; padding: 24px; border-radius: 12px; border: 2px solid #111;">
+            <h2 style="font-size: 20px; font-weight: 800; margin-bottom: 16px;">Stängningsrutin</h2>
+            <ul class="clean-list" style="margin-bottom: 24px;">
+                <li style="border-bottom: 1px solid #ccc;"><label style="width: 100%; display: flex; align-items: center; gap: 16px; font-size: 18px; cursor: pointer; margin: 0;"><input type="checkbox" style="width: 24px; min-height: 24px;"> Töm papperskorgar</label></li>
+                <li style="border-bottom: 1px solid #ccc;"><label style="width: 100%; display: flex; align-items: center; gap: 16px; font-size: 18px; cursor: pointer; margin: 0;"><input type="checkbox" style="width: 24px; min-height: 24px;"> Lås nödutgångar</label></li>
+            </ul>
+            <button class="btn-primary" onclick="showToast('Gården stängd! Alla utloggade och köer rensade.')">Alla punkter klara - Stäng Gården</button>
+        </section>
+
+        <button class="btn-secondary" style="margin-top: 48px; border: none; color: #666;" onclick="switchView('view-start')">Avbryt Demo</button>
     </main>
 
-    <!-- ==========================================
-         FRITIDSLEDARVY
-         ========================================== -->
-    <main id="view-ledare" class="view">
-        <button class="btn-back" onclick="switchView('view-landing')">← Byt roll (Gå tillbaka)</button>
-
-        <header style="display: flex; justify-content: space-between; align-items: flex-end;">
-            <div>
-                <p class="subtitle">Gårn</p>
-                <h1 style="margin-bottom: 0;">Fritidsledare</h1>
-            </div>
-            <button class="btn btn-secondary btn-small" onclick="openModal('qr-modal')">Visa QR</button>
+    <!-- VY: CHEF -->
+    <main id="view-chef" class="view">
+        <header class="clean-header">
+            <p class="subtitle">Överblick</p>
+            <h1 style="font-size: 32px;">Statistik & Personal</h1>
         </header>
 
-        <button class="btn btn-emergency" onclick="switchView('view-utrymning')">NÖDUTRYMNING</button>
+        <div style="display: flex; gap: 8px; margin-bottom: 24px; overflow-x: auto; padding-bottom: 8px;">
+            <button class="btn-primary" style="margin-top: 0; min-height: 40px; width: auto; padding: 0 16px; border-radius: 20px;">Denna vecka</button>
+            <button class="btn-secondary" style="margin-top: 0; min-height: 40px; width: auto; padding: 0 16px; border-radius: 20px;" onclick="showToast('Filtrerar på förra månaden')">Förra månaden</button>
+            <button class="btn-secondary" style="margin-top: 0; min-height: 40px; width: auto; padding: 0 16px; border-radius: 20px;" onclick="showToast('Välj specifikt datumintervall')">Välj datum...</button>
+        </div>
 
-        <section>
-            <h2>Manuell Incheckning</h2>
-            <div class="form-row">
-                <input type="text" placeholder="Namn eller nummer" class="input" style="margin-bottom:0;">
-                <button class="btn btn-secondary" style="margin-bottom:0;" onclick="showToast('Ungdom incheckad manuellt.')">Checka in</button>
+        <div style="grid-template-columns: 1fr 1fr; display: grid; gap: 16px; margin-bottom: 40px;">
+            <div style="border: 2px solid #111; border-radius: 12px; padding: 24px; text-center;">
+                <p style="font-size: 40px; font-weight: 900; line-height: 1;">412</p>
+                <p style="font-size: 12px; font-weight: 700; text-transform: uppercase; color: #666; margin-top: 8px;">Besökare totalt</p>
             </div>
-        </section>
+            <div style="border: 2px solid #111; border-radius: 12px; padding: 24px; text-center;">
+                <p style="font-size: 40px; font-weight: 900; line-height: 1;">4</p>
+                <p style="font-size: 12px; font-weight: 700; text-transform: uppercase; color: #666; margin-top: 8px;">Aktiva Gårdar</p>
+            </div>
+        </div>
 
         <section>
             <div style="display: flex; justify-content: space-between; align-items: baseline; border-bottom: 2px solid #eee; padding-bottom: 8px; margin-bottom: 16px;">
-                <h2 style="border: none; margin: 0; padding: 0;">Incheckade just nu</h2>
-                <span style="background: #111; color: #fff; padding: 4px 12px; border-radius: 20px; font-weight: bold; font-size: 14px;">3</span>
+                <h2 style="font-size: 18px; font-weight: 800;">Personalhantering</h2>
+                <button style="background:none; border:none; color: #2e7d32; font-weight: 700;" onclick="showToast('Formulär för Namn, E-post, Mobil och Gårdar öppnat.')">+ Lägg till</button>
             </div>
+            
             <ul class="clean-list">
                 <li>
                     <div>
-                        <div class="list-title">Anna Andersson</div>
-                        <div class="list-meta">Incheckad 18:15</div>
+                        <div class="visitor-name">Sara Svensson</div>
+                        <div class="visitor-meta">Fritidsledare • Gårn</div>
                     </div>
-                    <button class="btn btn-secondary btn-small" onclick="showToast('Utcheckad.')">Checka ut</button>
-                </li>
-                <li>
-                    <div>
-                        <div class="list-title">Erik Eriksson</div>
-                        <div class="list-meta">Incheckad 18:40</div>
+                    <div style="display: flex; gap: 12px;">
+                        <button style="background:none; border:none; font-weight: 700; font-size: 14px;" onclick="showToast('Sara är nu pausad (tjänstledig/vikarie). Hon kan inte logga in.')">Pausa</button>
+                        <button style="background:none; border:none; color: #d32f2f; font-weight: 700; font-size: 14px;" onclick="showToast('Bekräfta: Vill du radera Sara helt från systemet?')">Ta bort</button>
                     </div>
-                    <button class="btn btn-secondary btn-small" onclick="showToast('Utcheckad.')">Checka ut</button>
-                </li>
-                <li>
-                    <div>
-                        <div class="list-title">Filip Filipsson <span class="text-red">(Mönsterbrott)</span></div>
-                        <div class="list-meta">Incheckad 19:10 (Spring in/ut 4ggr)</div>
-                    </div>
-                    <button class="btn btn-secondary btn-small" onclick="showToast('Utcheckad.')">Checka ut</button>
                 </li>
             </ul>
         </section>
-
-        <section>
-            <h2>Stäng av ungdom</h2>
-            <div class="card" style="padding: 16px;">
-                <input type="text" placeholder="Namn på ungdom" class="input" id="susp-name">
-                <textarea placeholder="Obligatorisk anledning..." class="input" id="susp-reason"></textarea>
-                <button class="btn btn-secondary text-red" style="border-color:#d32f2f;" onclick="suspendYouth()">Stäng av (Spärra kort)</button>
-            </div>
-        </section>
-
-        <section>
-            <h2>Administration</h2>
-            <button class="btn btn-secondary" onclick="toggleSection('admin-push')">Skicka Push-notis</button>
-            <div id="admin-push" class="card hidden">
-                <textarea placeholder="T.ex. Gårn är stängd ikväll pga sjukdom!" class="input" id="push-msg"></textarea>
-                <button class="btn btn-primary" onclick="sendPush()">Skicka till alla</button>
-            </div>
-
-            <button class="btn btn-secondary" onclick="toggleSection('admin-activity')">Skapa Aktivitet</button>
-            <div id="admin-activity" class="card hidden">
-                <input type="text" placeholder="Aktivitetens namn" class="input">
-                <div class="form-row">
-                    <input type="datetime-local" class="input">
-                    <input type="datetime-local" class="input">
-                </div>
-                <button class="btn btn-primary" onclick="showToast('Aktivitet skapad!'); toggleSection('admin-activity');">Spara Aktivitet</button>
-            </div>
-
-            <button class="btn btn-secondary" onclick="toggleSection('admin-kiosk')">Uppdatera Kiosk & Info</button>
-            <div id="admin-kiosk" class="card hidden">
-                <input type="text" placeholder="Ny text för rullande banner" class="input">
-                <button class="btn btn-primary" onclick="showToast('Information uppdaterad!'); toggleSection('admin-kiosk');">Spara Information</button>
-            </div>
-        </section>
-
-        <section style="margin-top: 32px;">
-            <button id="btn-init-open" class="btn btn-secondary" onclick="toggleRoutine('open-routine')">Öppna Gården (Rutin)</button>
-            <div id="open-routine" class="routine-box hidden">
-                <h2 style="border: none;">Öppningsrutin</h2>
-                <ul class="clean-list" style="margin-bottom: 24px;">
-                    <li><label class="checkbox-label"><input type="checkbox" class="routine-checkbox open-cb" onchange="checkRoutine('open-cb', 'btn-confirm-open')"> Tänd lampa 1</label></li>
-                    <li><label class="checkbox-label"><input type="checkbox" class="routine-checkbox open-cb" onchange="checkRoutine('open-cb', 'btn-confirm-open')"> Gör toast</label></li>
-                </ul>
-                <button id="btn-confirm-open" class="btn btn-primary" disabled onclick="showToast('Gården är nu öppen!'); toggleRoutine('open-routine');">Klarmarkera & Öppna</button>
-            </div>
-
-            <button id="btn-init-close" class="btn btn-secondary text-red" style="border-color:#d32f2f;" onclick="toggleRoutine('close-routine')">Stäng Gården (Rutin)</button>
-            <div id="close-routine" class="routine-box hidden">
-                <h2 style="border: none;">Stängningsrutin</h2>
-                <ul class="clean-list" style="margin-bottom: 24px;">
-                    <li><label class="checkbox-label"><input type="checkbox" class="routine-checkbox close-cb" onchange="checkRoutine('close-cb', 'btn-confirm-close')"> Töm papperskorgar</label></li>
-                    <li><label class="checkbox-label"><input type="checkbox" class="routine-checkbox close-cb" onchange="checkRoutine('close-cb', 'btn-confirm-close')"> Kontrollera fönster</label></li>
-                </ul>
-                <button id="btn-confirm-close" class="btn btn-primary" disabled onclick="closeYard()">Alla punkter klara - Stäng</button>
-            </div>
-        </section>
+        
+        <button class="btn-secondary" style="margin-top: 48px; border: none; color: #666;" onclick="switchView('view-start')">Avbryt Demo</button>
     </main>
 
-    <!-- ==========================================
-         UTRYMNINGSVY (Nödläge)
-         ========================================== -->
-    <main id="view-utrymning" class="view emergency-mode">
-        <header style="text-align: center;">
-            <h1 style="font-size: 40px;">UTRYMNING</h1>
-            <p class="subtitle" style="color: #ffcccc; font-size: 16px;">Återsamlingsplats: Baksidans parkering</p>
-        </header>
+    <!-- VY: FÖRÄLDER -->
+    <main id="view-foralder" class="view" style="display: flex; flex-direction: column; justify-content: center; align-items: center; text-align: center;">
+        <!-- BankID inspirerad sköld-ikon -->
+        <svg class="w-16 h-16 text-blue-600 mb-6" style="width: 64px; height: 64px; color: #1d4ed8; margin-bottom: 24px;" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"></path></svg>
+        
+        <h1 style="font-size: 32px; font-weight: 900; margin-bottom: 16px;">Gårdskort</h1>
+        <p style="font-size: 18px; color: #444; font-weight: 500; margin-bottom: 40px; max-width: 320px;">
+            Godkänn gårdskortet med BankID, inga glömda lappar.
+        </p>
 
-        <div style="text-align: center; font-size: 32px; font-weight: 800; margin: 24px 0;">
-            <span id="evac-safe-count">0</span> / 3 i säkerhet
+        <div style="width: 100%; max-width: 320px; text-align: left; background: #f9f9f9; padding: 16px; border-radius: 12px; margin-bottom: 32px; border: 2px solid #eee;">
+            <p style="font-size: 12px; font-weight: 700; text-transform: uppercase; color: #666; margin-bottom: 4px;">Ungdom</p>
+            <p style="font-size: 18px; font-weight: 700; margin-bottom: 16px;">Filip Filipsson (2010)</p>
+            <p style="font-size: 12px; font-weight: 700; text-transform: uppercase; color: #666; margin-bottom: 4px;">Din roll</p>
+            <p style="font-size: 16px; font-weight: 500;">Vårdnadshavare 1</p>
         </div>
 
-        <ul class="clean-list evac-list" id="evac-list-ul">
-            <li onclick="toggleSafe(this)">
-                <span class="list-title">Anna Andersson</span>
+        <button class="btn-primary" style="background-color: #1d4ed8; border-color: #1e3a8a; max-width: 320px;" onclick="showToast('Gårdskortet är nu digitalt signerat och giltigt!')">Signera med BankID</button>
+        
+        <button class="btn-secondary" style="margin-top: 48px; border: none; color: #666;" onclick="switchView('view-start')">Avbryt Demo</button>
+    </main>
+
+    <!-- VY: UTRYMNING (Låst skärm för ledare) -->
+    <main id="view-utrymning" class="view" style="background-color: #d32f2f; color: white;">
+        <header style="text-align: center; margin-bottom: 32px;">
+            <h1 style="font-size: 40px; font-weight: 900; line-height: 1;">UTRYMNING</h1>
+            <p style="font-size: 16px; font-weight: 700; margin-top: 8px; color: #ffcccc;">Återsamlingsplats: Baksidan</p>
+        </header>
+
+        <div style="text-align: center; margin-bottom: 32px;">
+            <p style="font-size: 48px; font-weight: 900;"><span id="evac-safe">0</span> / 2</p>
+            <p style="font-size: 14px; font-weight: 700; text-transform: uppercase; letter-spacing: 1px;">I säkerhet</p>
+        </div>
+
+        <ul class="clean-list" style="background: white; color: #111; border-radius: 16px; overflow: hidden;" id="evac-list">
+            <!-- Stora klickytor för stressade situationer -->
+            <li style="padding: 24px 16px; cursor: pointer; border-bottom: 1px solid #eee;" onclick="toggleSafe(this)">
+                <span style="font-size: 20px; font-weight: 800;">Filip Filipsson</span>
             </li>
-            <li onclick="toggleSafe(this)">
-                <span class="list-title">Erik Eriksson</span>
-            </li>
-            <li onclick="toggleSafe(this)">
-                <span class="list-title">Filip Filipsson</span>
+            <li style="padding: 24px 16px; cursor: pointer; border-bottom: 1px solid #eee;" onclick="toggleSafe(this)">
+                <span style="font-size: 20px; font-weight: 800;">Anna Andersson</span>
             </li>
         </ul>
 
-        <div style="margin-top: auto; padding-top: 40px;">
-            <button class="btn btn-secondary" style="border-color: white; color: white;" onclick="switchView('view-ledare'); showToast('Utrymning avbruten, återgår till normalläge.');">Återgå till normalläge</button>
-        </div>
+        <button class="btn-secondary" style="color: white; border-color: white; margin-top: 40px;" onclick="switchView('view-ledare')">Återgå till normalläge</button>
     </main>
 
-    <!-- ==========================================
-         CHEFSVY (Superuser)
-         ========================================== -->
-    <main id="view-chef" class="view">
-        <button class="btn-back" onclick="switchView('view-landing')">← Byt roll (Gå tillbaka)</button>
-        
-        <header>
-            <p class="subtitle">Övergripande</p>
-            <h1>Hej Chef</h1>
-        </header>
-
-        <button class="btn btn-primary" onclick="switchView('view-stats')">Gå till Statistik →</button>
-
-        <section style="margin-top: 24px;">
-            <h2>Hantera personal</h2>
-            
-            <ul class="clean-list" style="margin-bottom: 24px;">
-                <li style="flex-direction: column; align-items: flex-start; gap: 12px;">
-                    <div style="width: 100%; display: flex; justify-content: space-between;">
-                        <div>
-                            <div class="list-title">Mattias Handley</div>
-                            <div class="list-meta">mattias@exempel.se • 070-1234567</div>
-                            <div class="list-meta" style="font-weight:600;">Gårdar: Gårn, Junsele</div>
-                        </div>
-                        <span class="status-pill pill-green" style="align-self: flex-start;">Aktiv</span>
-                    </div>
-                    <div class="form-row" style="width:100%;">
-                        <button class="btn btn-secondary btn-small" onclick="showToast('Medarbetare pausad (Tjänstledig).')">Pausa</button>
-                        <button class="btn btn-secondary btn-small text-red" style="border-color:#d32f2f;" onclick="showToast('Medarbetare borttagen.')">Ta bort</button>
-                    </div>
-                </li>
-            </ul>
-
-            <button class="btn btn-secondary" onclick="toggleSection('admin-add-staff')">+ Lägg till ny medarbetare</button>
-            <div id="admin-add-staff" class="card hidden">
-                <input type="text" placeholder="Fullständigt namn" class="input">
-                <input type="email" placeholder="E-postadress" class="input">
-                <input type="tel" placeholder="Mobilnummer" class="input">
-                <input type="text" placeholder="Tilldelade Gårdar (t.ex. Gårn)" class="input">
-                <button class="btn btn-primary" onclick="showToast('Ny medarbetare tillagd!'); toggleSection('admin-add-staff');">Spara medarbetare</button>
-            </div>
-        </section>
-    </main>
-
-    <!-- ==========================================
-         STATISTIKVY
-         ========================================== -->
-    <main id="view-stats" class="view">
-        <button class="btn-back" onclick="switchView('view-chef')">← Tillbaka till Chefsvy</button>
-        
-        <header>
-            <p class="subtitle">Analys</p>
-            <h1>Statistik</h1>
-        </header>
-
-        <section class="card" style="background:#f9f9f9; border-color:#111;">
-            <h3>Filter</h3>
-            <select class="input" onchange="showToast('Filtrerar datum...')">
-                <option>Idag</option>
-                <option>Igår</option>
-                <option>Veckan</option>
-                <option>Månaden</option>
-                <option>Eget intervall...</option>
-            </select>
-            <select class="input" onchange="showToast('Filtrerar gård...')">
-                <option>Alla Gårdar</option>
-                <option>Gårn</option>
-                <option>Junsele</option>
-            </select>
-        </section>
-
-        <section class="info-grid">
-            <div class="info-item" style="grid-column: 1 / -1;">
-                <span class="info-value" style="font-size: 48px;">142</span>
-                <span class="info-label">Totalt antal besökare</span>
-            </div>
-            <div class="info-item">
-                <span class="info-value" style="font-size: 24px;">45%</span>
-                <span class="info-label">Tjejer</span>
-            </div>
-            <div class="info-item">
-                <span class="info-value" style="font-size: 24px;">55%</span>
-                <span class="info-label">Killar</span>
-            </div>
-            <div class="info-item" style="grid-column: 1 / -1;">
-                <span class="info-value" style="font-size: 24px;">14.5 år</span>
-                <span class="info-label">Snittålder</span>
-            </div>
-        </section>
-    </main>
-
-    <!-- ==========================================
-         FÖRÄLDRAVY (Simulerad)
-         ========================================== -->
-    <main id="view-foralder" class="view">
-        <button class="btn-back" onclick="switchView('view-landing')">← Byt roll (Gå tillbaka)</button>
-        
-        <header style="margin-top: 40px; margin-bottom: 24px;">
-            <p class="subtitle">Godkännande av Gårdskort</p>
-            <h1>Till vårdnadshavare</h1>
-        </header>
-
-        <div class="card" style="border-color:#111;">
-            <p style="font-size: 18px; margin-bottom: 24px;">
-                Ditt barn, <strong>Filip Filipsson</strong>, har ansökt om Gårdskort på Gårn.
-            </p>
-            <button class="btn btn-primary" onclick="showToast('Tack! Gårdskortet är nu godkänt.'); setTimeout(()=>switchView('view-landing'), 1500);">Godkänn via SMS/BankID</button>
-            <button class="btn btn-secondary text-red" style="border-color: #d32f2f;" onclick="showToast('Du har nekat begäran.'); setTimeout(()=>switchView('view-landing'), 1500);">Neka</button>
-        </div>
-    </main>
-
-    <!-- ==========================================
-         JAVASCRIPT LOGIK
-         ========================================== -->
     <script>
-        // 1. Toast Notiser (Ersätter alert)
-        function showToast(message) {
-            const container = document.getElementById('toast-container');
-            const toast = document.createElement('div');
-            toast.className = 'toast';
-            toast.innerText = message;
-            container.appendChild(toast);
-            
-            setTimeout(() => {
-                toast.classList.add('hide');
-                setTimeout(() => toast.remove(), 300);
-            }, 3000);
-        }
-
-        // 2. Ruting (Byta Vy)
+        // Hanterar vy-byten via URL eller knappar
         function switchView(viewId) {
-            document.querySelectorAll('.view').forEach(view => view.classList.remove('active'));
+            document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
             document.getElementById(viewId).classList.add('active');
             window.scrollTo(0, 0);
         }
 
-        // 3. Modals & Toggles
-        function openModal(id) { document.getElementById(id).classList.remove('hidden'); }
-        function closeModal(id) { document.getElementById(id).classList.add('hidden'); }
-        function toggleSection(id) {
-            const el = document.getElementById(id);
-            if(el.classList.contains('hidden')) el.classList.remove('hidden');
-            else el.classList.add('hidden');
-        }
-
-        // 4. Kiosk & Önskelåda (Ungdom)
-        let cart = [];
-        let cartTotal = 0;
-
-        function addToCart(itemName, price) {
-            cart.push({name: itemName, price: price});
-            cartTotal += price;
+        // Fångar upp URL-parametrar från landningssidan och hoppar direkt till vald vy
+        window.addEventListener('DOMContentLoaded', () => {
+            const urlParams = new URLSearchParams(window.location.search);
+            const role = urlParams.get('role');
             
-            document.getElementById('cart-count').innerText = `${cart.length} artikel${cart.length > 1 ? 'ar' : ''}`;
-            document.getElementById('cart-total').innerText = `${cartTotal} kr`;
-            document.getElementById('cart-drawer').classList.add('visible');
-            showToast(`${itemName} tillagd i varukorgen.`);
+            if (role === 'ungdom') switchView('view-ungdom');
+            if (role === 'ledare') switchView('view-ledare');
+            if (role === 'chef') switchView('view-chef');
+            if (role === 'foralder') switchView('view-foralder');
+        });
+
+        // Toast-system (Ersätter alert)
+        function showToast(message) {
+            const toast = document.getElementById('toast');
+            toast.textContent = message;
+            toast.classList.add('show');
+            setTimeout(() => { toast.classList.remove('show'); }, 3000);
         }
 
-        function checkout() {
-            showToast(`Öppnar Swish för att betala ${cartTotal} kr...`);
-            cart = [];
-            cartTotal = 0;
-            document.getElementById('cart-drawer').classList.remove('visible');
+        // Nödutrymning Logik
+        function startEmergency() {
+            switchView('view-utrymning');
+            // Återställ listan
+            document.getElementById('evac-safe').textContent = "0";
+            document.querySelectorAll('#evac-list li').forEach(li => {
+                li.style.backgroundColor = "white";
+                li.style.color = "#111";
+                li.style.textDecoration = "none";
+                li.dataset.safe = "false";
+            });
         }
 
-        function submitWish() {
-            const input = document.getElementById('wish-input');
-            if(input.value.trim() === '') return;
-            showToast(`Ditt önskemål "${input.value}" har skickats till ledarna!`);
-            input.value = '';
-        }
-
-        // 5. Avstängning (Ledare)
-        function suspendYouth() {
-            const name = document.getElementById('susp-name').value;
-            const reason = document.getElementById('susp-reason').value;
-            if(!name || !reason) {
-                showToast("Du måste ange både namn och anledning för avstängningen.");
-                return;
-            }
-            showToast(`${name} är nu spärrad. Anledning: ${reason}`);
-            document.getElementById('susp-name').value = '';
-            document.getElementById('susp-reason').value = '';
-        }
-
-        // 6. Push-notiser (Ledare)
-        function sendPush() {
-            const msg = document.getElementById('push-msg').value;
-            if(!msg) return;
-            showToast("Push-notis skickas till alla ungdomar!");
-            document.getElementById('push-msg').value = '';
-            toggleSection('admin-push');
-        }
-
-        // 7. Utrymningslogik (Ledare)
-        let safeCount = 0;
         function toggleSafe(element) {
-            if (element.classList.contains('safe')) {
-                element.classList.remove('safe');
-                safeCount--;
+            const isSafe = element.dataset.safe === "true";
+            let currentSafe = parseInt(document.getElementById('evac-safe').textContent);
+
+            if (!isSafe) {
+                element.style.backgroundColor = "#e8f5e9";
+                element.style.color = "#2e7d32";
+                element.style.textDecoration = "line-through";
+                element.dataset.safe = "true";
+                currentSafe++;
+                // Flytta till botten av listan
+                element.parentNode.appendChild(element);
             } else {
-                element.classList.add('safe');
-                safeCount++;
-                // Flytta markerade till botten av listan (UX-krav)
-                element.parentElement.appendChild(element);
+                element.style.backgroundColor = "white";
+                element.style.color = "#111";
+                element.style.textDecoration = "none";
+                element.dataset.safe = "false";
+                currentSafe--;
             }
-            document.getElementById('evac-safe-count').innerText = safeCount;
-        }
-
-        // 8. Stängnings/Öppningsrutin (Ledare)
-        function toggleRoutine(routineId) {
-            const routineBox = document.getElementById(routineId);
-            if (routineBox.classList.contains('hidden')) {
-                routineBox.classList.remove('hidden');
-                // Nollställ checkboxar
-                const cbs = routineBox.querySelectorAll('.routine-checkbox');
-                cbs.forEach(cb => cb.checked = false);
-                checkRoutine(cbs[0].classList.contains('open-cb') ? 'open-cb' : 'close-cb', 
-                             routineId === 'open-routine' ? 'btn-confirm-open' : 'btn-confirm-close');
-            } else {
-                routineBox.classList.add('hidden');
-            }
-        }
-
-        function checkRoutine(checkboxClass, buttonId) {
-            const checkboxes = Array.from(document.querySelectorAll(`.${checkboxClass}`));
-            if(checkboxes.length === 0) return;
-            const allChecked = checkboxes.every(cb => cb.checked);
-            document.getElementById(buttonId).disabled = !allChecked;
-        }
-
-        function closeYard() {
-            showToast('Alla listor är rensade. Gården är stängd!');
-            toggleRoutine('close-routine'); 
-            setTimeout(() => switchView('view-landing'), 2000);
+            document.getElementById('evac-safe').textContent = currentSafe;
         }
     </script>
-  <script>
-    // Fångar upp URL-parametrar från landningssidan och hoppar direkt till vald vy
-    window.addEventListener('DOMContentLoaded', () => {
-        const urlParams = new URLSearchParams(window.location.search);
-        const role = urlParams.get('role');
-        
-        if (role === 'ungdom') switchView('view-ungdom');
-        if (role === 'ledare') switchView('view-ledare');
-        if (role === 'chef') switchView('view-chef');
-        if (role === 'foralder') switchView('view-foralder');
-    });
-</script>
 </body>
 </html>
