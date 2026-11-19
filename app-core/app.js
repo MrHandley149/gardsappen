@@ -3,7 +3,7 @@
     const toastEl = document.getElementById('toast');
 
     let currentView = 'start';
-    let ledareSubView = null; // 'qr' | 'manuell' | 'kiosk' | 'resurser' | 'push' | 'banner' | 'aktivitet'
+    let ledareSubView = null; // 'qr' | 'manuell' | 'kiosk' | 'resurser' | 'onskemal' | 'push' | 'banner' | 'aktivitet'
     let suspendFormOpen = false;
     let suspendPreselectId = '';
     let showAllCheckedIn = false;
@@ -87,7 +87,7 @@
                     <li class="list-item" style="flex-direction:column; align-items:stretch;">
                         <div class="row">
                             <div>
-                                <h3>${esc(Store.displayName(u))} ${u.geofenceStatus === 'ute_tillfalligt' ? '<span class="pill pill-amber">Ute ur zonen</span>' : ''}</h3>
+                                <h3>${esc(Store.displayName(u))}${u.geofenceStatus === 'ute_tillfalligt' ? '<span class="pill pill-amber">Ute ur zonen</span>' : ''}</h3>
                                 <div class="muted">Incheckad ${esc(u.incheckadTid)} • ${esc(u.kon)}${u.allergier ? ` • Allergi: ${esc(u.allergier)}` : ''}</div>
                             </div>
                             <div class="row" style="gap:6px;">
@@ -178,8 +178,7 @@
                         return `
                             <div class="surface">
                                 <div class="row" style="margin-bottom: 12px;">
-                                    <h3>${esc(r.namn)}</h3>
-                                    ${status}
+                                    <h3>${esc(r.namn)}</h3>${status}
                                 </div>
                                 ${r.ko.length > 0 ? `<p class="muted" style="margin-bottom:12px;">Kö: ${r.ko.map(esc).join(', ')}</p>` : ''}
                                 <button class="${inQueue ? 'btn-secondary' : 'btn-primary'}" style="min-height:46px;" onclick="App.toggleQueue('${r.id}')">
@@ -199,8 +198,7 @@
                     ${s.aktiviteter.map(a => `
                         <div class="surface">
                             <h3>${esc(a.namn)}</h3>
-                            <p class="muted" style="margin-bottom:14px;">${esc(a.tid)} • Max ${a.maxPerLag} per lag</p>
-                            ${a.lag.map(l => `
+                            <p class="muted" style="margin-bottom:14px;">${esc(a.tid)} • Max ${a.maxPerLag} per lag</p>${a.lag.map(l => `
                                 <div class="row" style="padding:8px 0; border-top:1px solid #e5e5e5;">
                                     <div>
                                         <strong>${esc(l.namn)}</strong>
@@ -400,10 +398,9 @@
             </div>
         ` : '';
 
-        let manageSubPanel = '';
-        if (ledareSubView === 'kiosk') {
-            manageSubPanel = `
-                <div class="surface" style="margin-top:16px;">
+        const managePanels = {
+            kiosk: `
+                <div class="surface">
                     <div class="row" style="margin-bottom:14px;">
                         <h3>Hantera kiosken</h3>
                         <button class="btn-link" onclick="App.setLedareSub(null)">Stäng</button>
@@ -412,7 +409,7 @@
                         ${s.kiosk.map(k => `
                             <li class="list-item">
                                 <div>
-                                    <strong>${esc(k.namn)}</strong> ${!k.iLager ? '<span class="pill pill-amber">Slut</span>' : ''}
+                                    <strong>${esc(k.namn)}</strong>${!k.iLager ? '<span class="pill pill-amber">Slut</span>' : ''}
                                     <div class="muted">${k.pris} kr</div>
                                 </div>
                                 <div class="row" style="gap:6px;">
@@ -428,27 +425,10 @@
                         <input type="number" id="new-kiosk-price" placeholder="Pris (kr)">
                     </div>
                     <button class="btn-primary" style="min-height:46px;" onclick="App.addKioskItem()">Lägg till vara</button>
-                    ${s.onskemal.length > 0 ? `
-                        <div style="margin-top:18px; padding-top:14px; border-top:1px solid #e0e0e0;">
-                            <p class="kicker">Önskemål från ungdomar</p>
-                            <ul class="list">
-                                ${s.onskemal.map(o => `
-                                    <li class="list-item" style="padding:10px 0;">
-                                        <div>
-                                            <strong>${esc(o.text)}</strong>
-                                            <div class="muted" style="font-size:12px;">${esc(o.av)}</div>
-                                        </div>
-                                        <button class="btn-small" onclick="App.deleteWish('${o.id}')">Klar</button>
-                                    </li>
-                                `).join('')}
-                            </ul>
-                        </div>
-                    ` : ''}
                 </div>
-            `;
-        } else if (ledareSubView === 'resurser') {
-            manageSubPanel = `
-                <div class="surface" style="margin-top:16px;">
+            `,
+            resurser: `
+                <div class="surface">
                     <div class="row" style="margin-bottom:14px;">
                         <h3>Bokningsbara resurser & köer</h3>
                         <button class="btn-link" onclick="App.setLedareSub(null)">Stäng</button>
@@ -468,7 +448,7 @@
                                 </div>
                                 ${r.ko.length > 0 ? `
                                     <div style="margin-top:10px;">
-                                        <div class="muted" style="margin-bottom:8px;">Kö: ${r.ko.map((n, idx) => `${idx + 1}. ${esc(n)}`).join(', ')}</div>
+                                        <div class="muted" style="margin-bottom:8px;">Kö: ${r.ko.map((n, idx) => `${idx + 1}.${esc(n)}`).join(', ')}</div>
                                         <div class="row" style="justify-content:flex-start; gap:8px;">
                                             <button class="btn-small dark" onclick="App.nextInQueue('${r.id}')">Nästa på tur</button>
                                             <button class="btn-small" onclick="App.clearQueue('${r.id}')">Rensa kö</button>
@@ -483,10 +463,30 @@
                         <button class="btn-small dark" style="min-height:52px;" onclick="App.addResource()">Lägg till</button>
                     </div>
                 </div>
-            `;
-        } else if (ledareSubView === 'push') {
-            manageSubPanel = `
-                <div class="surface" style="margin-top:16px;">
+            `,
+            onskemal: `
+                <div class="surface">
+                    <div class="row" style="margin-bottom:14px;">
+                        <h3>Önskemål från ungdomar</h3>
+                        <button class="btn-link" onclick="App.setLedareSub(null)">Stäng</button>
+                    </div>
+                    ${s.onskemal.length === 0 ? `<p class="muted">Inga nya önskemål just nu.</p>` : `
+                        <ul class="list">
+                            ${s.onskemal.map(o => `
+                                <li class="list-item" style="padding:10px 0;">
+                                    <div>
+                                        <strong>${esc(o.text)}</strong>
+                                        <div class="muted" style="font-size:12px;">${esc(o.av)}</div>
+                                    </div>
+                                    <button class="btn-small" onclick="App.deleteWish('${o.id}')">Klar</button>
+                                </li>
+                            `).join('')}
+                        </ul>
+                    `}
+                </div>
+            `,
+            push: `
+                <div class="surface">
                     <div class="row" style="margin-bottom:12px;">
                         <h3>Skicka pushmeddelande</h3>
                         <button class="btn-link" onclick="App.setLedareSub(null)">Stäng</button>
@@ -503,10 +503,9 @@
                         </div>
                     ` : ''}
                 </div>
-            `;
-        } else if (ledareSubView === 'banner') {
-            manageSubPanel = `
-                <div class="surface" style="margin-top:16px;">
+            `,
+            banner: `
+                <div class="surface">
                     <div class="row" style="margin-bottom:12px;">
                         <h3>Uppdatera info-banner</h3>
                         <button class="btn-link" onclick="App.setLedareSub(null)">Stäng</button>
@@ -517,10 +516,9 @@
                     </div>
                     <button class="btn-primary" style="min-height:46px;" onclick="App.saveBanner()">Spara banner</button>
                 </div>
-            `;
-        } else if (ledareSubView === 'aktivitet') {
-            manageSubPanel = `
-                <div class="surface" style="margin-top:16px;">
+            `,
+            aktivitet: `
+                <div class="surface">
                     <div class="row" style="margin-bottom:12px;">
                         <h3>Aktiviteter & anmälda lag</h3>
                         <button class="btn-link" onclick="App.setLedareSub(null)">Stäng</button>
@@ -556,8 +554,17 @@
                     </div>
                     <button class="btn-primary" style="min-height:46px;" onclick="App.addActivity()">Skapa aktivitet</button>
                 </div>
-            `;
-        }
+            `
+        };
+
+        const manageButtons = [
+            ['kiosk', 'Hantera kiosken (utbud, lager & priser)'],
+            ['resurser', 'Hantera bokningsbara resurser & köer'],
+            ['onskemal', `Hantera önskemål från ungdomar (${s.onskemal.length})`],
+            ['push', 'Skicka pushmeddelande'],
+            ['banner', 'Uppdatera info-banner (Ungdomsvy)'],
+            ['aktivitet', 'Aktiviteter & lag']
+        ];
 
         function renderRutinBlock(type, title, actionLabel, actionFn) {
             const items = s.rutiner[type];
@@ -657,7 +664,7 @@
                         <ul class="list">
                             ${(s.geofenceLog || []).slice(0, 5).map(g => `
                                 <li class="list-item" style="padding:8px 0;">
-                                    <span class="muted"><strong>${esc(g.namn)}</strong> – ${esc(g.handelse)}</span>
+                                    <span class="muted"><strong>${esc(g.namn)}</strong> –${esc(g.handelse)}</span>
                                     <strong style="font-size:12px;">${esc(g.tid)}</strong>
                                 </li>
                             `).join('')}
@@ -711,13 +718,10 @@
                 <div class="section">
                     <div class="section-header"><h2>Hantera gården</h2></div>
                     <div class="stack">
-                        <button class="btn-secondary" style="text-align:left;" onclick="App.setLedareSub('kiosk')">Hantera kiosken (utbud, lager & priser)</button>
-                        <button class="btn-secondary" style="text-align:left;" onclick="App.setLedareSub('resurser')">Hantera bokningsbara resurser & köer</button>
-                        <button class="btn-secondary" style="text-align:left;" onclick="App.setLedareSub('push')">Skicka pushmeddelande</button>
-                        <button class="btn-secondary" style="text-align:left;" onclick="App.setLedareSub('banner')">Uppdatera info-banner (Ungdomsvy)</button>
-                        <button class="btn-secondary" style="text-align:left;" onclick="App.setLedareSub('aktivitet')">Aktiviteter & lag</button>
+                        ${manageButtons.map(([key, label]) => `
+                            <button class="btn-secondary" style="text-align:left;" onclick="App.setLedareSub('${key}')">${label}</button>${ledareSubView === key ? managePanels[key] : ''}
+                        `).join('')}
                     </div>
-                    ${manageSubPanel}
                 </div>
 
                 ${renderRutinBlock('oppning', 'Öppningsrutin', 'Öppna gården', 'openGard')}
@@ -793,530 +797,4 @@
                             ['onskemal', 'Önskemålslåda']
                         ].map(([key, label]) => `
                             <label class="check-row">
-                                <input type="checkbox" ${flags[key] ? 'checked' : ''} onchange="App.toggleFlag('${key}')">
-                                <span>${label}</span>
-                            </label>
-                        `).join('')}
-                    </div>
-                </div>
-
-                <div class="section">
-                    <div class="section-header">
-                        <h2>Personal</h2>
-                        <button class="btn-small dark" onclick="App.addStaff()">+ Lägg till</button>
-                    </div>
-                    <ul class="list">
-                        ${s.personal.map(p => `
-                            <li class="list-item">
-                                <div>
-                                    <h3>${esc(p.namn)} ${!p.aktiv ? '<span class="pill pill-amber">Pausad</span>' : ''}</h3>
-                                    <div class="muted">${esc(p.roll)} • ${esc(p.gard)}</div>
-                                </div>
-                                <div class="row" style="gap:6px;">
-                                    <button class="btn-small" onclick="App.toggleStaff('${p.id}')">${p.aktiv ? 'Pausa' : 'Aktivera'}</button>
-                                    <button class="btn-small danger" onclick="App.deleteStaff('${p.id}')">Ta bort</button>
-                                </div>
-                            </li>
-                        `).join('')}
-                    </ul>
-                </div>
-
-                <div class="section">
-                    <div class="section-header"><h2>Spårbarhetslogg (Audit Log)</h2></div>
-                    <ul class="list">
-                        ${s.auditLog.slice(0, 6).map(l => `
-                            <li class="list-item">
-                                <span class="muted">${esc(l.text)}</span>
-                                <strong style="font-size:12px;">${esc(l.tid)}</strong>
-                            </li>
-                        `).join('')}
-                    </ul>
-                </div>
-            </div>
-        `;
-    }
-
-    // ==================== VY: FÖRÄLDER ====================
-    function renderForalder() {
-        const s = Store.get();
-        const u = s.ungdomar.find(x => x.id === 'u36') || s.ungdomar[0];
-        const godkant = u.status === 'godkant';
-
-        return `
-            <div class="app-shell">
-                ${topbar('Förälder')}
-
-                <p class="kicker">Digital signering</p>
-                <h1>Gårdskort</h1>
-                <p class="muted" style="margin-bottom:24px;">Godkänn ditt barns gårdskort med BankID och håll kontakt- och allergiuppgifter uppdaterade.</p>
-
-                <div class="surface" style="margin-bottom:20px;">
-                    <div class="row" style="margin-bottom:12px;">
-                        <div>
-                            <p class="kicker">Ungdom</p>
-                            <h3>${esc(u.fornamn)} ${esc(u.efternamn)} (${u.fodelsear})</h3>
-                        </div>
-                        <span class="pill ${godkant ? 'pill-green' : 'pill-amber'}">${godkant ? 'Godkänt' : 'Ej signerat'}</span>
-                    </div>
-                    <p class="muted">Vårdnadshavare: ${esc(u.foralderNamn)} (${esc(u.foralderTelefon)})</p>
-                </div>
-
-                <div class="field">
-                    <label class="field-label" for="parent-allergy">Allergier / viktig information</label>
-                    <input type="text" id="parent-allergy" value="${esc(u.allergier)}" placeholder="T.ex. Jordnötter, laktos (lämna tomt om inget)">
-                </div>
-
-                <button class="btn-bankid" onclick="App.signBankId('${u.id}')">
-                    ${godkant ? 'Uppdatera uppgifter med BankID' : 'Godkänn & signera med BankID'}
-                </button>
-            </div>
-        `;
-    }
-
-    // ==================== VY: UTRYMNING ====================
-    function renderUtrymning() {
-        const s = Store.get();
-        const gard = Store.getAktivGard();
-        const incheckade = s.ungdomar.filter(u => u.incheckad);
-        const sorted = [...incheckade].sort((a, b) => Number(evacSafeIds.has(a.id)) - Number(evacSafeIds.has(b.id)));
-
-        return `
-            <div class="evac-mode">
-                <div class="app-shell">
-                    <div style="text-align:center; padding: 16px 0 24px;">
-                        <h1>UTRYMNING</h1>
-                        <p style="font-weight:700; opacity:0.9;">Återsamlingsplats: ${esc(gard.atersamlingsplats)}</p>
-                        <div style="font-size:48px; font-weight:900; margin-top:16px;">${evacSafeIds.size} / ${incheckade.length}</div>
-                        <p style="font-size:12px; font-weight:700; text-transform:uppercase; letter-spacing:1px;">I säkerhet</p>
-                    </div>
-
-                    <div style="border-radius:14px; overflow:hidden;">
-                        ${sorted.map(u => {
-                            const safe = evacSafeIds.has(u.id);
-                            return `
-                                <div class="evac-item ${safe ? 'safe' : ''}" onclick="App.toggleEvacSafe('${u.id}')">
-                                    <span>${esc(Store.displayName(u))}</span>
-                                    <span>${safe ? 'KLAR' : ''}</span>
-                                </div>
-                            `;
-                        }).join('')}
-                    </div>
-
-                    <button class="btn-secondary" style="margin-top:32px; background:transparent; color:#fff; border-color:#fff;" onclick="App.go('ledare')">
-                        Avsluta utrymningsläge
-                    </button>
-                </div>
-            </div>
-        `;
-    }
-
-    function render() {
-        if (currentView === 'start') appEl.innerHTML = renderStart();
-        else if (currentView === 'ungdom') appEl.innerHTML = renderUngdom();
-        else if (currentView === 'ledare') appEl.innerHTML = renderLedare();
-        else if (currentView === 'chef') appEl.innerHTML = renderChef();
-        else if (currentView === 'foralder') appEl.innerHTML = renderForalder();
-        else if (currentView === 'utrymning') appEl.innerHTML = renderUtrymning();
-    }
-
-    // ==================== ACTIONS ====================
-    window.App = {
-        go,
-        selectGard(id) {
-            Store.get().tenant.aktivGardId = id;
-            Store.save();
-            showToast('Bytte gård');
-            render();
-        },
-        resetData() {
-            Store.reset();
-            cart = {};
-            evacSafeIds.clear();
-            showToast('All testdata återställd');
-            render();
-        },
-        setCheckinSearch(val) {
-            checkinSearch = val;
-            const container = document.getElementById('checkin-list-container');
-            if (container) container.innerHTML = renderCheckedInItemsHtml();
-        },
-        toggleShowAllCheckedIn() {
-            showAllCheckedIn = !showAllCheckedIn;
-            render();
-        },
-        toggleContact(id) {
-            expandedContactId = expandedContactId === id ? null : id;
-            const container = document.getElementById('checkin-list-container');
-            if (container) container.innerHTML = renderCheckedInItemsHtml();
-        },
-        simulateGeofence() {
-            const s = Store.get();
-            const incheckade = s.ungdomar.filter(u => u.incheckad);
-            if (incheckade.length === 0) return;
-            const u = incheckade[Math.floor(Math.random() * Math.min(6, incheckade.length))];
-            const leaving = u.geofenceStatus !== 'ute_tillfalligt';
-            u.geofenceStatus = leaving ? 'ute_tillfalligt' : 'inne';
-            u.utInAntal = (u.utInAntal || 0) + 1;
-            const tid = new Date().toLocaleTimeString('sv-SE', { hour: '2-digit', minute: '2-digit' });
-            const handelse = leaving ? 'Lämnade zonen (50 m)' : 'Kom tillbaka in i zonen';
-            if (!s.geofenceLog) s.geofenceLog = [];
-            s.geofenceLog.unshift({ tid, namn: Store.displayName(u), handelse });
-            Store.save();
-            showToast(`${Store.displayName(u)}: ${handelse}`);
-            render();
-        },
-        dismissPattern(id) {
-            const m = (Store.get().monsterAlerts || []).find(x => x.id === id);
-            if (m) m.hanterad = true;
-            Store.save();
-            showToast('Markerat som noterat');
-            render();
-        },
-        toggleCheckin(id) {
-            const u = Store.get().ungdomar.find(x => x.id === id);
-            if (!u) return;
-            u.incheckad = !u.incheckad;
-            u.incheckadTid = u.incheckad ? new Date().toLocaleTimeString('sv-SE', { hour: '2-digit', minute: '2-digit' }) : null;
-            u.geofenceStatus = 'inne';
-            Store.log(`${Store.displayName(u)} ${u.incheckad ? 'checkade in' : 'checkade ut'}`);
-            showToast(u.incheckad ? `${u.fornamn} incheckad` : `${u.fornamn} utcheckad`);
-            render();
-        },
-        toggleQueue(resId) {
-            const r = Store.get().resurser.find(x => x.id === resId);
-            const name = Store.displayName(Store.getAktivUngdom());
-            const idx = r.ko.indexOf(name);
-            if (idx >= 0) {
-                r.ko.splice(idx, 1);
-                showToast(`Lämnade kön till ${r.namn}`);
-            } else {
-                r.ko.push(name);
-                showToast(`Plats ${r.ko.length} i kön till ${r.namn}`);
-            }
-            Store.save();
-            render();
-        },
-        nextInQueue(resId) {
-            const r = Store.get().resurser.find(x => x.id === resId);
-            if (!r || r.ko.length === 0) return;
-            const next = r.ko.shift();
-            Store.save();
-            showToast(`${next} är nu på tur vid ${r.namn}`);
-            render();
-        },
-        clearQueue(resId) {
-            const r = Store.get().resurser.find(x => x.id === resId);
-            if (!r) return;
-            r.ko = [];
-            Store.save();
-            showToast(`Kön till ${r.namn} rensad`);
-            render();
-        },
-        createTeam(actId) {
-            const a = Store.get().aktiviteter.find(x => x.id === actId);
-            const pin = String(Math.floor(1000 + Math.random() * 9000));
-            const name = Store.displayName(Store.getAktivUngdom());
-            a.lag.push({ id: 'l' + Date.now(), namn: `Lag ${a.lag.length + 1}`, pinkod: pin, medlemmar: [name] });
-            Store.save();
-            showToast(`Lag skapat! Pinkod: ${pin}`);
-            render();
-        },
-        joinTeam(actId) {
-            const a = Store.get().aktiviteter.find(x => x.id === actId);
-            const pin = prompt('Ange lagets 4-siffriga pinkod (t.ex. 8472):');
-            if (!pin) return;
-            const team = a.lag.find(l => l.pinkod === pin.trim());
-            if (!team) return showToast('Hittade inget lag med den pinkoden');
-            const name = Store.displayName(Store.getAktivUngdom());
-            if (!team.medlemmar.includes(name)) team.medlemmar.push(name);
-            Store.save();
-            showToast(`Gick med i ${team.namn}`);
-            render();
-        },
-        cartDelta(id, delta) {
-            cart[id] = Math.max(0, (cart[id] || 0) + delta);
-            render();
-        },
-        paySwish(total) {
-            const gard = Store.getAktivGard();
-            cart = {};
-            Store.log(`Kioskköp ${total} kr via Swish`);
-            showToast(`Swish förifylld: ${total} kr till ${gard.swishNummer}`);
-            render();
-        },
-        addWish() {
-            const input = document.getElementById('wish-input');
-            const text = (input?.value || '').trim();
-            if (!text) return;
-            Store.get().onskemal.unshift({ id: 'o' + Date.now(), text, av: Store.displayName(Store.getAktivUngdom()) });
-            Store.save();
-            showToast('Önskemål skickat till ledarna');
-            render();
-        },
-        deleteWish(id) {
-            const s = Store.get();
-            s.onskemal = s.onskemal.filter(o => o.id !== id);
-            Store.save();
-            showToast('Önskemål markerat som klart');
-            render();
-        },
-        setLedareSub(sub) {
-            ledareSubView = ledareSubView === sub ? null : sub;
-            render();
-        },
-        openSuspendForm(id) {
-            suspendPreselectId = id || '';
-            suspendFormOpen = true;
-            render();
-            const el = document.getElementById('suspend-form-box');
-            if (el) el.scrollIntoView({ behavior: 'smooth', block: 'center' });
-        },
-        closeSuspendForm() {
-            suspendFormOpen = false;
-            render();
-        },
-        confirmSuspend() {
-            const id = document.getElementById('suspend-youth')?.value;
-            const until = document.getElementById('suspend-until')?.value;
-            const reason = (document.getElementById('suspend-reason')?.value || '').trim();
-            if (!id || !until || !reason) {
-                return showToast('Välj ungdom, slutdatum och ange orsak');
-            }
-            const u = Store.get().ungdomar.find(x => x.id === id);
-            if (!u) return;
-            u.avstangd = true;
-            u.avstangdTill = until;
-            u.avstangdOrsak = reason;
-            u.avstangdGardId = Store.getAktivGard().id;
-            u.incheckad = false;
-            u.incheckadTid = null;
-            suspendFormOpen = false;
-            Store.log(`${Store.displayName(u)} avstängd t.o.m. ${until} (${reason})`);
-            showToast(`${u.fornamn} är avstängd t.o.m. ${until}`);
-            render();
-        },
-        liftSuspend(id) {
-            const u = Store.get().ungdomar.find(x => x.id === id);
-            if (!u) return;
-            u.avstangd = false;
-            u.avstangdTill = null;
-            u.avstangdOrsak = '';
-            u.avstangdGardId = null;
-            Store.log(`Avstängning hävd för ${Store.displayName(u)}`);
-            showToast(`Avstängning hävd för ${u.fornamn}`);
-            render();
-        },
-        setSuspendScope(val) {
-            Store.get().tenant.avstangningScope = val;
-            Store.log(`Synlighet för avstängningar ändrad till: ${val}`);
-            showToast('Synlighet uppdaterad');
-            render();
-        },
-        toggleSuspendGard(gardId) {
-            const t = Store.get().tenant;
-            if (!t.avstangningSpecifikaGardar) t.avstangningSpecifikaGardar = [];
-            const idx = t.avstangningSpecifikaGardar.indexOf(gardId);
-            if (idx >= 0) t.avstangningSpecifikaGardar.splice(idx, 1);
-            else t.avstangningSpecifikaGardar.push(gardId);
-            Store.save();
-            showToast('Uppdaterade valda gårdar');
-            render();
-        },
-        addKioskItem() {
-            const name = (document.getElementById('new-kiosk-name')?.value || '').trim();
-            const price = parseInt(document.getElementById('new-kiosk-price')?.value, 10);
-            if (!name || isNaN(price)) return showToast('Ange namn och pris');
-            Store.get().kiosk.push({ id: 'k' + Date.now(), namn: name, pris: price, iLager: true });
-            Store.save();
-            showToast(`${name} tillagd i kiosken`);
-            render();
-        },
-        toggleKioskStock(id) {
-            const item = Store.get().kiosk.find(k => k.id === id);
-            if (!item) return;
-            item.iLager = !item.iLager;
-            Store.save();
-            showToast(item.iLager ? `${item.namn} åter i lager` : `${item.namn} markerad som slut`);
-            render();
-        },
-        editKioskPrice(id) {
-            const item = Store.get().kiosk.find(k => k.id === id);
-            const next = prompt(`Nytt pris för ${item.namn} (kr):`, item.pris);
-            if (next === null) return;
-            const parsed = parseInt(next, 10);
-            if (!isNaN(parsed)) {
-                item.pris = parsed;
-                Store.save();
-                showToast('Pris uppdaterat');
-                render();
-            }
-        },
-        deleteKioskItem(id) {
-            const s = Store.get();
-            s.kiosk = s.kiosk.filter(k => k.id !== id);
-            Store.save();
-            showToast('Vara borttagen');
-            render();
-        },
-        addResource() {
-            const name = (document.getElementById('new-resource-name')?.value || '').trim();
-            if (!name) return showToast('Ange namn på resursen');
-            Store.get().resurser.push({ id: 'r' + Date.now(), namn: name, ko: [] });
-            Store.save();
-            showToast(`${name} tillagd`);
-            render();
-        },
-        renameResource(id) {
-            const r = Store.get().resurser.find(x => x.id === id);
-            const next = prompt('Nytt namn på resurs:', r.namn);
-            if (next === null || !next.trim()) return;
-            r.namn = next.trim();
-            Store.save();
-            showToast('Namn uppdaterat');
-            render();
-        },
-        deleteResource(id) {
-            const s = Store.get();
-            s.resurser = s.resurser.filter(x => x.id !== id);
-            Store.save();
-            showToast('Resurs borttagen');
-            render();
-        },
-        sendPush() {
-            const input = document.getElementById('push-input');
-            const text = (input?.value || '').trim();
-            if (!text) return showToast('Skriv ett meddelande först');
-            const tid = new Date().toLocaleTimeString('sv-SE', { hour: '2-digit', minute: '2-digit' });
-            const s = Store.get();
-            if (!s.notiser) s.notiser = [];
-            s.notiser.unshift({ id: 'n' + Date.now(), tid, text });
-            Store.log(`Pushmeddelande skickat: "${text}"`);
-            showToast('Pushmeddelande skickat till ungdomarna');
-            render();
-        },
-        saveBanner() {
-            const val = (document.getElementById('banner-input')?.value || '').trim();
-            if (!val) return;
-            Store.getAktivGard().banner = val;
-            Store.save();
-            ledareSubView = null;
-            showToast('Banner uppdaterad i ungdomsvyn');
-            render();
-        },
-        addActivity() {
-            const name = (document.getElementById('act-name')?.value || '').trim();
-            const time = (document.getElementById('act-time')?.value || '').trim() || 'Ikväll';
-            if (!name) return showToast('Ange namn på aktiviteten');
-            Store.get().aktiviteter.unshift({ id: 'a' + Date.now(), namn: name, tid: time, maxPerLag: 2, lag: [] });
-            Store.save();
-            showToast('Aktivitet skapad');
-            render();
-        },
-        deleteActivity(id) {
-            const s = Store.get();
-            s.aktiviteter = s.aktiviteter.filter(a => a.id !== id);
-            Store.save();
-            showToast('Aktivitet borttagen');
-            render();
-        },
-        toggleRutin(type, id) {
-            const item = Store.get().rutiner[type].find(r => r.id === id);
-            if (item) item.klar = !item.klar;
-            Store.save();
-        },
-        toggleEditRutin(type) {
-            editRutin[type] = !editRutin[type];
-            render();
-        },
-        addRutinItem(type) {
-            const input = document.getElementById(`new-rutin-${type}`);
-            const text = (input?.value || '').trim();
-            if (!text) return;
-            Store.get().rutiner[type].push({ id: type + Date.now(), text, klar: false });
-            Store.save();
-            showToast('Punkt tillagd');
-            render();
-        },
-        deleteRutinItem(type, id) {
-            const rutiner = Store.get().rutiner;
-            rutiner[type] = rutiner[type].filter(r => r.id !== id);
-            Store.save();
-            showToast('Punkt borttagen');
-            render();
-        },
-        openGard() {
-            Store.getAktivGard().oppen = true;
-            Store.log(`${Store.getAktivGard().namn} öppnad`);
-            showToast('Gården är nu öppen');
-            render();
-        },
-        closeGard() {
-            const s = Store.get();
-            Store.getAktivGard().oppen = false;
-            s.ungdomar.forEach(u => { u.incheckad = false; u.incheckadTid = null; u.geofenceStatus = 'inne'; });
-            s.resurser.forEach(r => { r.ko = []; });
-            Store.log(`${Store.getAktivGard().namn} stängd – alla utcheckade`);
-            showToast('Gården stängd. Alla utcheckade och köer rensade.');
-            render();
-        },
-        startEvac() {
-            evacSafeIds.clear();
-            Store.log('Nödutrymning aktiverad');
-            go('utrymning');
-        },
-        toggleEvacSafe(id) {
-            if (evacSafeIds.has(id)) evacSafeIds.delete(id);
-            else evacSafeIds.add(id);
-            render();
-        },
-        setStatPeriod(p) {
-            statPeriod = p;
-            render();
-        },
-        toggleFlag(key) {
-            const flags = Store.getAktivGard().featureFlags;
-            flags[key] = !flags[key];
-            Store.log(`Feature "${key}" ${flags[key] ? 'aktiverad' : 'gömd'}`);
-            showToast('Inställning sparad');
-            render();
-        },
-        addStaff() {
-            const namn = prompt('Namn på ny personal:');
-            if (!namn) return;
-            Store.get().personal.push({
-                id: 'p' + Date.now(),
-                namn: namn.trim(),
-                roll: 'Fritidsledare',
-                gard: Store.getAktivGard().namn,
-                aktiv: true
-            });
-            Store.log(`Personal tillagd: ${namn.trim()}`);
-            showToast(`${namn.trim()} tillagd`);
-            render();
-        },
-        toggleStaff(id) {
-            const p = Store.get().personal.find(x => x.id === id);
-            p.aktiv = !p.aktiv;
-            Store.log(`${p.namn} ${p.aktiv ? 'aktiverad' : 'pausad'}`);
-            render();
-        },
-        deleteStaff(id) {
-            const s = Store.get();
-            s.personal = s.personal.filter(x => x.id !== id);
-            Store.save();
-            showToast('Personal borttagen');
-            render();
-        },
-        signBankId(id) {
-            const u = Store.get().ungdomar.find(x => x.id === id);
-            const allergy = (document.getElementById('parent-allergy')?.value || '').trim();
-            u.allergier = allergy;
-            u.status = 'godkant';
-            Store.log(`Gårdskort signerat med BankID för ${u.fornamn}`);
-            showToast('Signerat med BankID! Gårdskortet är nu aktivt.');
-            render();
-        }
-    };
-
-    render();
-})();
+                                <input type="checkbox" ${flags[key] ? 'checked' : ''} onchange="App.
