@@ -1,12 +1,12 @@
 (function () {
-    const STORAGE_KEY = 'gardsappen_live_v3';
+    const STORAGE_KEY = 'gardsappen_live_v4';
 
     function buildYouthList() {
         const list = [
-            { id: 'u1', fornamn: 'Filip', efternamn: 'Filipsson', fodelsear: 2010, kon: 'Kille', status: 'godkant', allergier: 'Jordnötter', skyddadIdentitet: false, incheckad: true, incheckadTid: '18:05', avstangd: false, avstangdTill: null, avstangdOrsak: '', avstangdGardId: null, foralderNamn: 'Karin Filipsson', foralderTelefon: '070-123 45 67' },
-            { id: 'u2', fornamn: 'Anna', efternamn: 'Andersson', fodelsear: 2011, kon: 'Tjej', status: 'godkant', allergier: '', skyddadIdentitet: false, incheckad: true, incheckadTid: '18:08', avstangd: false, avstangdTill: null, avstangdOrsak: '', avstangdGardId: null, foralderNamn: 'Per Andersson', foralderTelefon: '070-234 56 78' },
-            { id: 'u3', fornamn: 'Alex', efternamn: '(Skyddad)', fodelsear: 2009, kon: 'Vill ej uppge', status: 'godkant', allergier: 'Laktos', skyddadIdentitet: true, incheckad: true, incheckadTid: '18:10', avstangd: false, avstangdTill: null, avstangdOrsak: '', avstangdGardId: null, foralderNamn: 'Kontakt via samordnare', foralderTelefon: 'Skyddat nummer' },
-            { id: 'u4', fornamn: 'Sam', efternamn: '(Skyddad)', fodelsear: 2011, kon: 'Vill ej uppge', status: 'godkant', allergier: '', skyddadIdentitet: true, incheckad: true, incheckadTid: '18:12', avstangd: false, avstangdTill: null, avstangdOrsak: '', avstangdGardId: null, foralderNamn: 'Kontakt via samordnare', foralderTelefon: 'Skyddat nummer' }
+            { id: 'u1', fornamn: 'Filip', efternamn: 'Filipsson', fodelsear: 2010, kon: 'Kille', status: 'godkant', allergier: 'Jordnötter', skyddadIdentitet: false, incheckad: true, incheckadTid: '18:05', geofenceStatus: 'inne', utInAntal: 3, avstangd: false, avstangdTill: null, avstangdOrsak: '', avstangdGardId: null, foralderNamn: 'Karin Filipsson', foralderTelefon: '070-123 45 67' },
+            { id: 'u2', fornamn: 'Anna', efternamn: 'Andersson', fodelsear: 2011, kon: 'Tjej', status: 'godkant', allergier: '', skyddadIdentitet: false, incheckad: true, incheckadTid: '18:08', geofenceStatus: 'inne', utInAntal: 0, avstangd: false, avstangdTill: null, avstangdOrsak: '', avstangdGardId: null, foralderNamn: 'Per Andersson', foralderTelefon: '070-234 56 78' },
+            { id: 'u3', fornamn: 'Alex', efternamn: '(Skyddad)', fodelsear: 2009, kon: 'Vill ej uppge', status: 'godkant', allergier: 'Laktos', skyddadIdentitet: true, incheckad: true, incheckadTid: '18:10', geofenceStatus: 'inne', utInAntal: 1, avstangd: false, avstangdTill: null, avstangdOrsak: '', avstangdGardId: null, foralderNamn: 'Kontakt via samordnare', foralderTelefon: 'Skyddat nummer' },
+            { id: 'u4', fornamn: 'Sam', efternamn: '(Skyddad)', fodelsear: 2011, kon: 'Vill ej uppge', status: 'godkant', allergier: '', skyddadIdentitet: true, incheckad: true, incheckadTid: '18:12', geofenceStatus: 'inne', utInAntal: 0, avstangd: false, avstangdTill: null, avstangdOrsak: '', avstangdGardId: null, foralderNamn: 'Kontakt via samordnare', foralderTelefon: 'Skyddat nummer' }
         ];
 
         const extra = [
@@ -56,6 +56,8 @@
                 skyddadIdentitet: false,
                 incheckad: true,
                 incheckadTid: `18:${min}`,
+                geofenceStatus: i === 0 ? 'ute_tillfalligt' : 'inne',
+                utInAntal: i === 0 ? 4 : (i === 2 ? 2 : 0),
                 avstangd: false,
                 avstangdTill: null,
                 avstangdOrsak: '',
@@ -77,6 +79,8 @@
             skyddadIdentitet: false,
             incheckad: false,
             incheckadTid: null,
+            geofenceStatus: 'inne',
+            utInAntal: 0,
             avstangd: false,
             avstangdTill: null,
             avstangdOrsak: '',
@@ -131,8 +135,20 @@
             },
             aktivUngdomId: 'u1',
             ungdomar: buildYouthList(),
+            geofenceLog: [
+                { tid: '19:18', namn: 'Lucas Eriksson', handelse: 'Lämnade zonen (50 m)' },
+                { tid: '19:14', namn: 'Filip Filipsson', handelse: 'Kom tillbaka in i zonen' },
+                { tid: '19:02', namn: 'Filip Filipsson', handelse: 'Lämnade zonen (50 m)' },
+                { tid: '18:55', namn: 'Hugo Karlsson', handelse: 'Kom tillbaka in i zonen' }
+            ],
+            monsterAlerts: [
+                { id: 'm1', ungdomId: 'u7', namn: 'Hugo Karlsson', typ: 'Kommer senare', beskrivning: 'Har kommit ca 1,5 timme senare än vanligt senaste 3 veckorna.', hanterad: false },
+                { id: 'm2', ungdomId: 'u6', namn: 'Maja Johansson', typ: 'Går tidigare', beskrivning: 'Lämnar gården 45 min tidigare än normalt senaste besöken.', hanterad: false },
+                { id: 'm3', ungdomId: 'u1', namn: 'Filip Filipsson', typ: 'Besöker oftare', beskrivning: 'Ökat från 1 till 4 besök i veckan denna månad.', hanterad: false },
+                { id: 'm4', ungdomId: 'u12', namn: 'Wilma Svensson', typ: 'Besöker mer sällan', beskrivning: 'Har inte besökt gården på 3 veckor (tidigare 3 ggr/vecka).', hanterad: false }
+            ],
             resurser: [
-                { id: 'r1', namn: 'Biljard', ko: [] },
+                { id: 'r1', namn: 'Biljard', ko: ['Filip Filipsson', 'Hugo Karlsson'] },
                 { id: 'r2', namn: 'Pingis', ko: [] },
                 { id: 'r3', namn: 'TV-spel', ko: ['Anna Andersson'] },
                 { id: 'r4', namn: 'Pysselrum', ko: [] },
