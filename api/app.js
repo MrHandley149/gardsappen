@@ -15,19 +15,13 @@ module.exports = async function handler(req, res) {
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="robots" content="noindex, nofollow">
     <title>Gårdsappen</title>
-    <style>
-        * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
-        body { background: #fff; color: #111; min-height: 100vh; display: flex; align-items: center; justify-content: center; padding: 24px; }
-        .wrap { max-width: 360px; width: 100%; text-align: center; }
-        h1 { font-size: 32px; font-weight: 900; letter-spacing: -0.5px; margin-bottom: 12px; }
-        p { font-size: 16px; color: #555; line-height: 1.5; }
-    </style>
+    <link rel="stylesheet" href="/app-core/style.css">
 </head>
 <body>
-    <div class="wrap">
-        <h1>Upplåst</h1>
-        <p>Sifferlåset fungerar. Här bygger vi nu in den fullskaliga appen med fejkdata.</p>
-    </div>
+    <div id="toast" class="toast" role="status" aria-live="polite"></div>
+    <div id="app"></div>
+    <script src="/app-core/store.js"></script>
+    <script src="/app-core/app.js"></script>
 </body>
 </html>`);
 };
