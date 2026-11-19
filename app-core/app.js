@@ -6,6 +6,9 @@
     let ledareSubView = null; // 'qr' | 'manuell' | 'kiosk' | 'resurser' | 'push' | 'banner' | 'aktivitet'
     let suspendFormOpen = false;
     let suspendPreselectId = '';
+    let showAllCheckedIn = false;
+    let checkinSearch = '';
+    let expandedContactId = null;
     let editRutin = { oppning: false, stangning: false };
     let cart = {}; // { kioskItemId: antal }
     let evacSafeIds = new Set();
@@ -37,6 +40,7 @@
         currentView = view;
         ledareSubView = null;
         suspendFormOpen = false;
+        expandedContactId = null;
         window.scrollTo(0, 0);
         render();
     }
@@ -53,6 +57,54 @@
                     ${showBack ? `<button class="btn-link" onclick="App.go('start')">Byt vy</button>` : ''}
                 </div>
             </div>
+        `;
+    }
+
+    function renderCheckedInItemsHtml() {
+        const s = Store.get();
+        const incheckade = s.ungdomar.filter(u => u.incheckad);
+        const q = checkinSearch.trim().toLowerCase();
+
+        if (incheckade.length === 0) {
+            return `<p class="muted">Inga ungdomar incheckade just nu.</p>`;
+        }
+
+        if (!showAllCheckedIn && !q) {
+            return `<p class="muted">Listan är dold. Sök på namn ovan eller slå på "Visa hela listan".</p>`;
+        }
+
+        const filtered = q
+            ? incheckade.filter(u => Store.displayName(u).toLowerCase().includes(q))
+            : incheckade;
+
+        if (filtered.length === 0) {
+            return `<p class="muted">Ingen incheckad ungdom matchade "${esc(checkinSearch)}".</p>`;
+        }
+
+        return `
+            <ul class="list">
+                ${filtered.map(u => `
+                    <li class="list-item" style="flex-direction:column; align-items:stretch;">
+                        <div class="row">
+                            <div>
+                                <h3>${esc(Store.displayName(u))} ${u.geofenceStatus === 'ute_tillfalligt' ? '<span class="pill pill-amber">Ute ur zonen</span>' : ''}</h3>
+                                <div class="muted">Incheckad ${esc(u.incheckadTid)} • ${esc(u.kon)}${u.allergier ? ` • Allergi: ${esc(u.allergier)}` : ''}</div>
+                            </div>
+                            <div class="row" style="gap:6px;">
+                                <button class="btn-small" onclick="App.toggleContact('${u.id}')">Kontakt</button>
+                                <button class="btn-small danger" onclick="App.openSuspendForm('${u.id}')">Stäng av</button>
+                            </div>
+                        </div>
+                        ${expandedContactId === u.id ? `
+                            <div class="surface" style="margin-top:10px; padding:12px 14px;">
+                                <p class="kicker">Vårdnadshavare</p>
+                                <strong>${esc(u.foralderNamn)}</strong>
+                                <div class="muted">${esc(u.foralderTelefon)}</div>
+                            </div>
+                        ` : ''}
+                    </li>
+                `).join('')}
+            </ul>
         `;
     }
 
@@ -171,7 +223,7 @@
         const cartItems = [];
         s.kiosk.forEach(item => {
             const qty = cart[item.id] || 0;
-            if (qty > 0) {
+            if (qty > 0 && item.iLager) {
                 cartTotal += qty * item.pris;
                 cartItems.push(`${qty}x ${item.namn}`);
             }
@@ -266,8 +318,10 @@
         const s = Store.get();
         const gard = Store.getAktivGard();
         const incheckade = s.ungdomar.filter(u => u.incheckad);
+        const uteUrZon = incheckade.filter(u => u.geofenceStatus === 'ute_tillfalligt');
+        const springerUtIn = incheckade.filter(u => (u.utInAntal || 0) >= 2);
+        const aktivaMonster = (s.monsterAlerts || []).filter(m => !m.hanterad);
 
-        // Filtrera avstängda utifrån chefens inställning (en gård, alla gårdar eller specifika gårdar)
         const scope = s.tenant.avstangningScope || 'alla';
         const specifika = s.tenant.avstangningSpecifikaGardar || [];
         const avstangda = s.ungdomar.filter(u => {
@@ -358,10 +412,11 @@
                         ${s.kiosk.map(k => `
                             <li class="list-item">
                                 <div>
-                                    <strong>${esc(k.namn)}</strong>
+                                    <strong>${esc(k.namn)}</strong> ${!k.iLager ? '<span class="pill pill-amber">Slut</span>' : ''}
                                     <div class="muted">${k.pris} kr</div>
                                 </div>
                                 <div class="row" style="gap:6px;">
+                                    <button class="btn-small" onclick="App.toggleKioskStock('${k.id}')">${k.iLager ? 'Slut' : 'I lager'}</button>
                                     <button class="btn-small" onclick="App.editKioskPrice('${k.id}')">Pris</button>
                                     <button class="btn-small danger" onclick="App.deleteKioskItem('${k.id}')">Ta bort</button>
                                 </div>
@@ -376,7 +431,17 @@
                     ${s.onskemal.length > 0 ? `
                         <div style="margin-top:18px; padding-top:14px; border-top:1px solid #e0e0e0;">
                             <p class="kicker">Önskemål från ungdomar</p>
-                            ${s.onskemal.map(o => `<p class="muted" style="margin-top:4px;">• ${esc(o.text)} (${esc(o.av)})</p>`).join('')}
+                            <ul class="list">
+                                ${s.onskemal.map(o => `
+                                    <li class="list-item" style="padding:10px 0;">
+                                        <div>
+                                            <strong>${esc(o.text)}</strong>
+                                            <div class="muted" style="font-size:12px;">${esc(o.av)}</div>
+                                        </div>
+                                        <button class="btn-small" onclick="App.deleteWish('${o.id}')">Klar</button>
+                                    </li>
+                                `).join('')}
+                            </ul>
                         </div>
                     ` : ''}
                 </div>
@@ -385,17 +450,31 @@
             manageSubPanel = `
                 <div class="surface" style="margin-top:16px;">
                     <div class="row" style="margin-bottom:14px;">
-                        <h3>Hantera bokningsbara resurser</h3>
+                        <h3>Bokningsbara resurser & köer</h3>
                         <button class="btn-link" onclick="App.setLedareSub(null)">Stäng</button>
                     </div>
                     <ul class="list" style="margin-bottom:16px;">
                         ${s.resurser.map(r => `
-                            <li class="list-item">
-                                <strong>${esc(r.namn)}</strong>
-                                <div class="row" style="gap:6px;">
-                                    <button class="btn-small" onclick="App.renameResource('${r.id}')">Byt namn</button>
-                                    <button class="btn-small danger" onclick="App.deleteResource('${r.id}')">Ta bort</button>
+                            <li class="list-item" style="flex-direction:column; align-items:stretch;">
+                                <div class="row">
+                                    <div>
+                                        <strong>${esc(r.namn)}</strong>
+                                        <span class="pill ${r.ko.length > 0 ? 'pill-red' : 'pill-green'}" style="margin-left:6px;">${r.ko.length} i kö</span>
+                                    </div>
+                                    <div class="row" style="gap:6px;">
+                                        <button class="btn-small" onclick="App.renameResource('${r.id}')">Byt namn</button>
+                                        <button class="btn-small danger" onclick="App.deleteResource('${r.id}')">Ta bort</button>
+                                    </div>
                                 </div>
+                                ${r.ko.length > 0 ? `
+                                    <div style="margin-top:10px;">
+                                        <div class="muted" style="margin-bottom:8px;">Kö: ${r.ko.map((n, idx) => `${idx + 1}. ${esc(n)}`).join(', ')}</div>
+                                        <div class="row" style="justify-content:flex-start; gap:8px;">
+                                            <button class="btn-small dark" onclick="App.nextInQueue('${r.id}')">Nästa på tur</button>
+                                            <button class="btn-small" onclick="App.clearQueue('${r.id}')">Rensa kö</button>
+                                        </div>
+                                    </div>
+                                ` : ''}
                             </li>
                         `).join('')}
                     </ul>
@@ -443,9 +522,30 @@
             manageSubPanel = `
                 <div class="surface" style="margin-top:16px;">
                     <div class="row" style="margin-bottom:12px;">
-                        <h3>Skapa aktivitet</h3>
+                        <h3>Aktiviteter & anmälda lag</h3>
                         <button class="btn-link" onclick="App.setLedareSub(null)">Stäng</button>
                     </div>
+                    ${s.aktiviteter.length === 0 ? `<p class="muted" style="margin-bottom:14px;">Inga aktiva aktiviteter.</p>` : `
+                        <ul class="list" style="margin-bottom:16px;">
+                            ${s.aktiviteter.map(a => `
+                                <li class="list-item" style="flex-direction:column; align-items:stretch;">
+                                    <div class="row">
+                                        <div>
+                                            <strong>${esc(a.namn)}</strong>
+                                            <div class="muted" style="font-size:12px;">${esc(a.tid)} • ${a.lag.length} lag</div>
+                                        </div>
+                                        <button class="btn-small danger" onclick="App.deleteActivity('${a.id}')">Ta bort</button>
+                                    </div>
+                                    ${a.lag.length > 0 ? `
+                                        <div style="margin-top:8px;">
+                                            ${a.lag.map(l => `<div class="muted" style="font-size:13px;">• <strong>${esc(l.namn)}</strong> (PIN ${esc(l.pinkod)}): ${l.medlemmar.map(esc).join(', ')}</div>`).join('')}
+                                        </div>
+                                    ` : ''}
+                                </li>
+                            `).join('')}
+                        </ul>
+                    `}
+                    <p class="kicker" style="margin-bottom:8px;">Skapa ny aktivitet</p>
                     <div class="field">
                         <label class="field-label" for="act-name">Namn</label>
                         <input type="text" id="act-name" placeholder="T.ex. Pingisturnering">
@@ -454,7 +554,7 @@
                         <label class="field-label" for="act-time">Tid</label>
                         <input type="text" id="act-time" placeholder="T.ex. Fredag 19:30">
                     </div>
-                    <button class="btn-primary" style="min-height:46px;" onclick="App.addActivity()">Skapa</button>
+                    <button class="btn-primary" style="min-height:46px;" onclick="App.addActivity()">Skapa aktivitet</button>
                 </div>
             `;
         }
@@ -520,15 +620,65 @@
                         <h2>Incheckade just nu</h2>
                         <span class="pill pill-dark">${incheckade.length}</span>
                     </div>
-                    ${incheckade.length === 0 ? `<p class="muted">Inga ungdomar incheckade just nu.</p>` : `
+                    <div class="field" style="margin-bottom:10px;">
+                        <input type="text" id="checkin-search" value="${esc(checkinSearch)}" placeholder="Sök incheckad ungdom..." oninput="App.setCheckinSearch(this.value)">
+                    </div>
+                    <label class="check-row" style="border-bottom:none; padding:6px 0 12px; font-size:14px;">
+                        <input type="checkbox" ${showAllCheckedIn ? 'checked' : ''} onchange="App.toggleShowAllCheckedIn()">
+                        <span>Visa hela listan (${incheckade.length} incheckade)</span>
+                    </label>
+                    <div id="checkin-list-container">
+                        ${renderCheckedInItemsHtml()}
+                    </div>
+                </div>
+
+                <div class="section">
+                    <div class="section-header">
+                        <h2>Geofencing (Ut & in)</h2>
+                        <button class="btn-small" onclick="App.simulateGeofence()">Simulera ut/in</button>
+                    </div>
+                    <div class="surface">
+                        <p class="kicker">Just nu utanför 50 m-zonen (${uteUrZon.length})</p>
+                        ${uteUrZon.length === 0 ? `<p class="muted" style="margin-bottom:14px;">Alla incheckade befinner sig inom zonen.</p>` : `
+                            <ul class="list" style="margin-bottom:14px;">
+                                ${uteUrZon.map(u => `
+                                    <li class="list-item" style="padding:8px 0;">
+                                        <strong>${esc(Store.displayName(u))}</strong>
+                                        <span class="pill pill-amber">Ute ur zonen</span>
+                                    </li>
+                                `).join('')}
+                            </ul>
+                        `}
+                        <p class="kicker">Springer ut och in ofta ikväll</p>
+                        ${springerUtIn.length === 0 ? `<p class="muted" style="margin-bottom:14px;">Ingen avvikande rörelse.</p>` : `
+                            <p class="muted" style="margin-bottom:14px;">${springerUtIn.map(u => `${esc(Store.displayName(u))} (${u.utInAntal} ggr)`).join(' • ')}</p>
+                        `}
+                        <p class="kicker">Senaste passager</p>
                         <ul class="list">
-                            ${incheckade.map(u => `
+                            ${(s.geofenceLog || []).slice(0, 5).map(g => `
+                                <li class="list-item" style="padding:8px 0;">
+                                    <span class="muted"><strong>${esc(g.namn)}</strong> – ${esc(g.handelse)}</span>
+                                    <strong style="font-size:12px;">${esc(g.tid)}</strong>
+                                </li>
+                            `).join('')}
+                        </ul>
+                    </div>
+                </div>
+
+                <div class="section">
+                    <div class="section-header">
+                        <h2>Ändrade mönster</h2>
+                        <span class="pill ${aktivaMonster.length > 0 ? 'pill-amber' : 'pill-dark'}">${aktivaMonster.length}</span>
+                    </div>
+                    ${aktivaMonster.length === 0 ? `<p class="muted">Inga flaggade mönsterändringar just nu.</p>` : `
+                        <ul class="list">
+                            ${aktivaMonster.map(m => `
                                 <li class="list-item">
                                     <div>
-                                        <h3>${esc(Store.displayName(u))}</h3>
-                                        <div class="muted">Incheckad ${esc(u.incheckadTid)} • ${esc(u.kon)}${u.allergier ? ` • Allergi: ${esc(u.allergier)}` : ''}</div>
+                                        <h3>${esc(m.namn)} <span class="pill pill-amber">${esc(m.typ)}</span></h3>
+                                        <div class="muted">${esc(m.beskrivning)}</div>
                                     </div>
-                                    <button class="btn-small danger" onclick="App.openSuspendForm('${u.id}')">Stäng av</button>
+                                    <button class="btn-small" onclick="App.dismissPattern('${m.id}')">Noterat</button>
                                 </li>
                             `).join('')}
                         </ul>
@@ -561,11 +711,11 @@
                 <div class="section">
                     <div class="section-header"><h2>Hantera gården</h2></div>
                     <div class="stack">
-                        <button class="btn-secondary" style="text-align:left;" onclick="App.setLedareSub('kiosk')">Hantera kiosken (utbud & priser)</button>
-                        <button class="btn-secondary" style="text-align:left;" onclick="App.setLedareSub('resurser')">Hantera bokningsbara resurser</button>
+                        <button class="btn-secondary" style="text-align:left;" onclick="App.setLedareSub('kiosk')">Hantera kiosken (utbud, lager & priser)</button>
+                        <button class="btn-secondary" style="text-align:left;" onclick="App.setLedareSub('resurser')">Hantera bokningsbara resurser & köer</button>
                         <button class="btn-secondary" style="text-align:left;" onclick="App.setLedareSub('push')">Skicka pushmeddelande</button>
                         <button class="btn-secondary" style="text-align:left;" onclick="App.setLedareSub('banner')">Uppdatera info-banner (Ungdomsvy)</button>
-                        <button class="btn-secondary" style="text-align:left;" onclick="App.setLedareSub('aktivitet')">Skapa aktivitet</button>
+                        <button class="btn-secondary" style="text-align:left;" onclick="App.setLedareSub('aktivitet')">Aktiviteter & lag</button>
                     </div>
                     ${manageSubPanel}
                 </div>
@@ -785,11 +935,49 @@
             showToast('All testdata återställd');
             render();
         },
+        setCheckinSearch(val) {
+            checkinSearch = val;
+            const container = document.getElementById('checkin-list-container');
+            if (container) container.innerHTML = renderCheckedInItemsHtml();
+        },
+        toggleShowAllCheckedIn() {
+            showAllCheckedIn = !showAllCheckedIn;
+            render();
+        },
+        toggleContact(id) {
+            expandedContactId = expandedContactId === id ? null : id;
+            const container = document.getElementById('checkin-list-container');
+            if (container) container.innerHTML = renderCheckedInItemsHtml();
+        },
+        simulateGeofence() {
+            const s = Store.get();
+            const incheckade = s.ungdomar.filter(u => u.incheckad);
+            if (incheckade.length === 0) return;
+            const u = incheckade[Math.floor(Math.random() * Math.min(6, incheckade.length))];
+            const leaving = u.geofenceStatus !== 'ute_tillfalligt';
+            u.geofenceStatus = leaving ? 'ute_tillfalligt' : 'inne';
+            u.utInAntal = (u.utInAntal || 0) + 1;
+            const tid = new Date().toLocaleTimeString('sv-SE', { hour: '2-digit', minute: '2-digit' });
+            const handelse = leaving ? 'Lämnade zonen (50 m)' : 'Kom tillbaka in i zonen';
+            if (!s.geofenceLog) s.geofenceLog = [];
+            s.geofenceLog.unshift({ tid, namn: Store.displayName(u), handelse });
+            Store.save();
+            showToast(`${Store.displayName(u)}: ${handelse}`);
+            render();
+        },
+        dismissPattern(id) {
+            const m = (Store.get().monsterAlerts || []).find(x => x.id === id);
+            if (m) m.hanterad = true;
+            Store.save();
+            showToast('Markerat som noterat');
+            render();
+        },
         toggleCheckin(id) {
             const u = Store.get().ungdomar.find(x => x.id === id);
             if (!u) return;
             u.incheckad = !u.incheckad;
             u.incheckadTid = u.incheckad ? new Date().toLocaleTimeString('sv-SE', { hour: '2-digit', minute: '2-digit' }) : null;
+            u.geofenceStatus = 'inne';
             Store.log(`${Store.displayName(u)} ${u.incheckad ? 'checkade in' : 'checkade ut'}`);
             showToast(u.incheckad ? `${u.fornamn} incheckad` : `${u.fornamn} utcheckad`);
             render();
@@ -806,6 +994,22 @@
                 showToast(`Plats ${r.ko.length} i kön till ${r.namn}`);
             }
             Store.save();
+            render();
+        },
+        nextInQueue(resId) {
+            const r = Store.get().resurser.find(x => x.id === resId);
+            if (!r || r.ko.length === 0) return;
+            const next = r.ko.shift();
+            Store.save();
+            showToast(`${next} är nu på tur vid ${r.namn}`);
+            render();
+        },
+        clearQueue(resId) {
+            const r = Store.get().resurser.find(x => x.id === resId);
+            if (!r) return;
+            r.ko = [];
+            Store.save();
+            showToast(`Kön till ${r.namn} rensad`);
             render();
         },
         createTeam(actId) {
@@ -847,6 +1051,13 @@
             Store.get().onskemal.unshift({ id: 'o' + Date.now(), text, av: Store.displayName(Store.getAktivUngdom()) });
             Store.save();
             showToast('Önskemål skickat till ledarna');
+            render();
+        },
+        deleteWish(id) {
+            const s = Store.get();
+            s.onskemal = s.onskemal.filter(o => o.id !== id);
+            Store.save();
+            showToast('Önskemål markerat som klart');
             render();
         },
         setLedareSub(sub) {
@@ -920,6 +1131,14 @@
             showToast(`${name} tillagd i kiosken`);
             render();
         },
+        toggleKioskStock(id) {
+            const item = Store.get().kiosk.find(k => k.id === id);
+            if (!item) return;
+            item.iLager = !item.iLager;
+            Store.save();
+            showToast(item.iLager ? `${item.namn} åter i lager` : `${item.namn} markerad som slut`);
+            render();
+        },
         editKioskPrice(id) {
             const item = Store.get().kiosk.find(k => k.id === id);
             const next = prompt(`Nytt pris för ${item.namn} (kr):`, item.pris);
@@ -990,8 +1209,14 @@
             if (!name) return showToast('Ange namn på aktiviteten');
             Store.get().aktiviteter.unshift({ id: 'a' + Date.now(), namn: name, tid: time, maxPerLag: 2, lag: [] });
             Store.save();
-            ledareSubView = null;
             showToast('Aktivitet skapad');
+            render();
+        },
+        deleteActivity(id) {
+            const s = Store.get();
+            s.aktiviteter = s.aktiviteter.filter(a => a.id !== id);
+            Store.save();
+            showToast('Aktivitet borttagen');
             render();
         },
         toggleRutin(type, id) {
@@ -1028,7 +1253,7 @@
         closeGard() {
             const s = Store.get();
             Store.getAktivGard().oppen = false;
-            s.ungdomar.forEach(u => { u.incheckad = false; u.incheckadTid = null; });
+            s.ungdomar.forEach(u => { u.incheckad = false; u.incheckadTid = null; u.geofenceStatus = 'inne'; });
             s.resurser.forEach(r => { r.ko = []; });
             Store.log(`${Store.getAktivGard().namn} stängd – alla utcheckade`);
             showToast('Gården stängd. Alla utcheckade och köer rensade.');
