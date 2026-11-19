@@ -391,3 +391,8 @@ select:focus {
 .toast.show {
     top: 20px;
 }
+.check-row input[type="checkbox"]:checked + span {
+    text-decoration: line-through;
+    text-decoration-thickness: 1px;
+    color: #888888;
+}
