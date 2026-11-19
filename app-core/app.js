@@ -4,6 +4,7 @@
 
     let currentView = 'start';
     let ledareSubView = null; // 'qr' | 'manuell' | 'kiosk' | 'banner' | 'aktivitet'
+    let editRutin = { oppning: false, stangning: false };
     let cart = {}; // { kioskItemId: antal }
     let evacSafeIds = new Set();
     let statPeriod = 'vecka';
@@ -97,7 +98,6 @@
                 ? `<span class="pill pill-green">Gårdskort godkänt</span>`
                 : `<span class="pill pill-amber">Väntar på vårdnadshavare</span>`;
 
-        // Kösystem
         const koerHtml = flags.koer ? `
             <div class="section">
                 <div class="section-header"><h2>Boka spel</h2></div>
@@ -124,7 +124,6 @@
             </div>
         ` : '';
 
-        // Lag & Aktiviteter
         const lagHtml = flags.lag ? `
             <div class="section">
                 <div class="section-header"><h2>Aktiviteter & Lag</h2></div>
@@ -152,7 +151,6 @@
             </div>
         ` : '';
 
-        // Kiosk & Swish
         let cartTotal = 0;
         const cartItems = [];
         s.kiosk.forEach(item => {
@@ -201,7 +199,6 @@
             </div>
         ` : '';
 
-        // Önskemål
         const onskemalHtml = flags.onskemal ? `
             <div class="section">
                 <div class="surface" style="background:#111; color:#fff;">
@@ -252,10 +249,10 @@
         const gard = Store.getAktivGard();
         const incheckade = s.ungdomar.filter(u => u.incheckad);
 
-        let subPanel = '';
+        let topSubPanel = '';
         if (ledareSubView === 'qr') {
-            subPanel = `
-                <div class="surface" style="margin-top:20px; text-align:center;">
+            topSubPanel = `
+                <div class="surface" style="margin-top:16px; text-align:center;">
                     <p class="kicker">Inchecknings-QR för ${esc(gard.namn)}</p>
                     <div style="width:160px; height:160px; margin:16px auto; background:#111; color:#fff; display:flex; align-items:center; justify-content:center; border-radius:12px; font-weight:900; font-size:20px; letter-spacing:2px;">
                         QR-KOD
@@ -265,8 +262,8 @@
                 </div>
             `;
         } else if (ledareSubView === 'manuell') {
-            subPanel = `
-                <div class="surface" style="margin-top:20px;">
+            topSubPanel = `
+                <div class="surface" style="margin-top:16px;">
                     <div class="row" style="margin-bottom:12px;">
                         <h3>Manuell incheckning</h3>
                         <button class="btn-link" onclick="App.setLedareSub(null)">Stäng</button>
@@ -276,7 +273,7 @@
                             <li class="list-item">
                                 <div>
                                     <strong>${esc(Store.displayName(u))}</strong>
-                                    <div class="muted" style="font-size:12px;">${u.status === 'godkant' ? 'Godkänt kort' : 'Väntar förälder'}</div>
+                                    <div class="muted" style="font-size:12px;">${u.status === 'godkant' ? 'Godkänt kort' : 'Inväntar föräldrars godkännande'}</div>
                                 </div>
                                 <button class="btn-small ${u.incheckad ? '' : 'dark'}" onclick="App.toggleCheckin('${u.id}')">
                                     ${u.incheckad ? 'Checka ut' : 'Checka in'}
@@ -286,9 +283,12 @@
                     </ul>
                 </div>
             `;
-        } else if (ledareSubView === 'kiosk') {
-            subPanel = `
-                <div class="surface" style="margin-top:20px;">
+        }
+
+        let manageSubPanel = '';
+        if (ledareSubView === 'kiosk') {
+            manageSubPanel = `
+                <div class="surface" style="margin-top:16px;">
                     <div class="row" style="margin-bottom:14px;">
                         <h3>Hantera kiosken</h3>
                         <button class="btn-link" onclick="App.setLedareSub(null)">Stäng</button>
@@ -321,8 +321,8 @@
                 </div>
             `;
         } else if (ledareSubView === 'banner') {
-            subPanel = `
-                <div class="surface" style="margin-top:20px;">
+            manageSubPanel = `
+                <div class="surface" style="margin-top:16px;">
                     <div class="row" style="margin-bottom:12px;">
                         <h3>Uppdatera info-banner</h3>
                         <button class="btn-link" onclick="App.setLedareSub(null)">Stäng</button>
@@ -335,8 +335,8 @@
                 </div>
             `;
         } else if (ledareSubView === 'aktivitet') {
-            subPanel = `
-                <div class="surface" style="margin-top:20px;">
+            manageSubPanel = `
+                <div class="surface" style="margin-top:16px;">
                     <div class="row" style="margin-bottom:12px;">
                         <h3>Skapa aktivitet</h3>
                         <button class="btn-link" onclick="App.setLedareSub(null)">Stäng</button>
@@ -350,6 +350,41 @@
                         <input type="text" id="act-time" placeholder="T.ex. Fredag 19:30">
                     </div>
                     <button class="btn-primary" style="min-height:46px;" onclick="App.addActivity()">Skapa</button>
+                </div>
+            `;
+        }
+
+        function renderRutinBlock(type, title, actionLabel, actionFn) {
+            const items = s.rutiner[type];
+            const isEditing = editRutin[type];
+            return `
+                <div class="section surface">
+                    <div class="row" style="margin-bottom:12px;">
+                        <h2 style="margin-bottom:0;">${title}</h2>
+                        <button class="btn-link" onclick="App.toggleEditRutin('${type}')">${isEditing ? 'Klar' : 'Redigera'}</button>
+                    </div>
+                    ${isEditing ? `
+                        <ul class="list" style="margin-bottom:14px;">
+                            ${items.map(r => `
+                                <li class="list-item">
+                                    <span>${esc(r.text)}</span>
+                                    <button class="btn-small danger" onclick="App.deleteRutinItem('${type}', '${r.id}')">Ta bort</button>
+                                </li>
+                            `).join('')}
+                        </ul>
+                        <div class="row">
+                            <input type="text" id="new-rutin-${type}" placeholder="Ny punkt...">
+                            <button class="btn-small dark" style="min-height:52px;" onclick="App.addRutinItem('${type}')">Lägg till</button>
+                        </div>
+                    ` : `
+                        ${items.map(r => `
+                            <label class="check-row">
+                                <input type="checkbox" ${r.klar ? 'checked' : ''} onchange="App.toggleRutin('${type}', '${r.id}')">
+                                <span>${esc(r.text)}</span>
+                            </label>
+                        `).join('')}
+                        <button class="btn-primary" style="margin-top:16px;" onclick="App.${actionFn}()">${actionLabel}</button>
+                    `}
                 </div>
             `;
         }
@@ -373,7 +408,7 @@
                     <button class="btn-secondary" onclick="App.setLedareSub('manuell')">Manuell incheck</button>
                 </div>
 
-                ${subPanel}
+                ${topSubPanel}
 
                 <div class="section">
                     <div class="section-header">
@@ -404,29 +439,11 @@
                         <button class="btn-secondary" style="text-align:left;" onclick="App.setLedareSub('banner')">Uppdatera info-banner (Ungdomsvy)</button>
                         <button class="btn-secondary" style="text-align:left;" onclick="App.setLedareSub('aktivitet')">Skapa aktivitet</button>
                     </div>
+                    ${manageSubPanel}
                 </div>
 
-                <div class="section surface">
-                    <h2>Öppningsrutin</h2>
-                    ${s.rutiner.oppning.map(r => `
-                        <label class="check-row">
-                            <input type="checkbox" ${r.klar ? 'checked' : ''} onchange="App.toggleRutin('oppning', '${r.id}')">
-                            <span>${esc(r.text)}</span>
-                        </label>
-                    `).join('')}
-                    <button class="btn-primary" style="margin-top:16px;" onclick="App.openGard()">Öppna gården</button>
-                </div>
-
-                <div class="section surface">
-                    <h2>Stängningsrutin</h2>
-                    ${s.rutiner.stangning.map(r => `
-                        <label class="check-row">
-                            <input type="checkbox" ${r.klar ? 'checked' : ''} onchange="App.toggleRutin('stangning', '${r.id}')">
-                            <span>${esc(r.text)}</span>
-                        </label>
-                    `).join('')}
-                    <button class="btn-primary" style="margin-top:16px;" onclick="App.closeGard()">Alla punkter klara – Stäng gården</button>
-                </div>
+                ${renderRutinBlock('oppning', 'Öppningsrutin', 'Öppna gården', 'openGard')}
+                ${renderRutinBlock('stangning', 'Stängningsrutin', 'Alla punkter klara – Stäng gården', 'closeGard')}
             </div>
         `;
     }
@@ -743,6 +760,26 @@
             const item = Store.get().rutiner[type].find(r => r.id === id);
             if (item) item.klar = !item.klar;
             Store.save();
+        },
+        toggleEditRutin(type) {
+            editRutin[type] = !editRutin[type];
+            render();
+        },
+        addRutinItem(type) {
+            const input = document.getElementById(`new-rutin-${type}`);
+            const text = (input?.value || '').trim();
+            if (!text) return;
+            Store.get().rutiner[type].push({ id: type + Date.now(), text, klar: false });
+            Store.save();
+            showToast('Punkt tillagd');
+            render();
+        },
+        deleteRutinItem(type, id) {
+            const rutiner = Store.get().rutiner;
+            rutiner[type] = rutiner[type].filter(r => r.id !== id);
+            Store.save();
+            showToast('Punkt borttagen');
+            render();
         },
         openGard() {
             Store.getAktivGard().oppen = true;
