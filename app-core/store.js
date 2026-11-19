@@ -1,5 +1,86 @@
 (function () {
-    const STORAGE_KEY = 'gardsappen_live_v1';
+    const STORAGE_KEY = 'gardsappen_live_v2';
+
+    function buildYouthList() {
+        const list = [
+            { id: 'u1', fornamn: 'Filip', efternamn: 'Filipsson', fodelsear: 2010, kon: 'Kille', status: 'godkant', allergier: 'Jordnötter', skyddadIdentitet: false, incheckad: true, incheckadTid: '18:05', avstangd: false, foralderNamn: 'Karin Filipsson', foralderTelefon: '070-123 45 67' },
+            { id: 'u2', fornamn: 'Anna', efternamn: 'Andersson', fodelsear: 2011, kon: 'Tjej', status: 'godkant', allergier: '', skyddadIdentitet: false, incheckad: true, incheckadTid: '18:08', avstangd: false, foralderNamn: 'Per Andersson', foralderTelefon: '070-234 56 78' },
+            { id: 'u3', fornamn: 'Alex', efternamn: '(Skyddad)', fodelsear: 2009, kon: 'Vill ej uppge', status: 'godkant', allergier: 'Laktos', skyddadIdentitet: true, incheckad: true, incheckadTid: '18:10', avstangd: false, foralderNamn: 'Kontakt via samordnare', foralderTelefon: 'Skyddat nummer' },
+            { id: 'u4', fornamn: 'Sam', efternamn: '(Skyddad)', fodelsear: 2011, kon: 'Vill ej uppge', status: 'godkant', allergier: '', skyddadIdentitet: true, incheckad: true, incheckadTid: '18:12', avstangd: false, foralderNamn: 'Kontakt via samordnare', foralderTelefon: 'Skyddat nummer' }
+        ];
+
+        const extra = [
+            ['Lucas', 'Eriksson', 2010, 'Kille', ''],
+            ['Maja', 'Johansson', 2011, 'Tjej', ''],
+            ['Hugo', 'Karlsson', 2009, 'Kille', 'Mjölkprotein'],
+            ['Ella', 'Nilsson', 2012, 'Tjej', ''],
+            ['William', 'Larsson', 2010, 'Kille', ''],
+            ['Astrid', 'Olsson', 2011, 'Tjej', ''],
+            ['Noah', 'Persson', 2009, 'Kille', ''],
+            ['Wilma', 'Svensson', 2010, 'Tjej', 'Gluten'],
+            ['Elias', 'Gustafsson', 2012, 'Kille', ''],
+            ['Freja', 'Pettersson', 2011, 'Tjej', ''],
+            ['Oliver', 'Jonsson', 2010, 'Kille', ''],
+            ['Ebba', 'Jansson', 2009, 'Tjej', ''],
+            ['Oscar', 'Hansson', 2011, 'Kille', ''],
+            ['Klara', 'Bengtsson', 2010, 'Tjej', ''],
+            ['Adam', 'Jönsson', 2012, 'Kille', ''],
+            ['Alma', 'Lind', 2011, 'Tjej', 'Nötter'],
+            ['Leo', 'Jakobsson', 2009, 'Kille', ''],
+            ['Agnes', 'Magnusson', 2010, 'Tjej', ''],
+            ['Viktor', 'Olofsson', 2011, 'Kille', ''],
+            ['Selma', 'Lindström', 2012, 'Tjej', ''],
+            ['Albin', 'Lindqvist', 2010, 'Kille', ''],
+            ['Elsa', 'Lindgren', 2009, 'Tjej', ''],
+            ['Isak', 'Berg', 2011, 'Kille', ''],
+            ['Signe', 'Axelsson', 2010, 'Tjej', ''],
+            ['Theo', 'Bergström', 2012, 'Kille', ''],
+            ['Vera', 'Lundberg', 2011, 'Tjej', ''],
+            ['Arvid', 'Lundgren', 2009, 'Kille', ''],
+            ['Stella', 'Mattsson', 2010, 'Tjej', ''],
+            ['Melker', 'Berglund', 2011, 'Kille', ''],
+            ['Nora', 'Fredriksson', 2010, 'Tjej', ''],
+            ['Emil', 'Sandberg', 2012, 'Kille', '']
+        ];
+
+        extra.forEach((row, i) => {
+            const min = String(15 + i).padStart(2, '0');
+            list.push({
+                id: 'u' + (i + 5),
+                fornamn: row[0],
+                efternamn: row[1],
+                fodelsear: row[2],
+                kon: row[3],
+                status: 'godkant',
+                allergier: row[4],
+                skyddadIdentitet: false,
+                incheckad: true,
+                incheckadTid: `18:${min}`,
+                avstangd: false,
+                foralderNamn: `Vårdnadshavare ${row[1]}`,
+                foralderTelefon: '070-555 00 ' + String(10 + i)
+            });
+        });
+
+        // Ej incheckad, inväntar föräldrars godkännande
+        list.push({
+            id: 'u36',
+            fornamn: 'Liam',
+            efternamn: 'Lindberg',
+            fodelsear: 2012,
+            kon: 'Kille',
+            status: 'vantar_foralder',
+            allergier: '',
+            skyddadIdentitet: false,
+            incheckad: false,
+            incheckadTid: null,
+            avstangd: false,
+            foralderNamn: 'Maria Lindberg',
+            foralderTelefon: '070-345 67 89'
+        });
+
+        return list;
+    }
 
     function createInitialData() {
         return {
@@ -41,68 +122,13 @@
                 ]
             },
             aktivUngdomId: 'u1',
-            ungdomar: [
-                {
-                    id: 'u1',
-                    fornamn: 'Filip',
-                    efternamn: 'Filipsson',
-                    fodelsear: 2010,
-                    status: 'godkant',
-                    allergier: 'Jordnötter',
-                    skyddadIdentitet: false,
-                    incheckad: true,
-                    incheckadTid: '18:42',
-                    avstangd: false,
-                    foralderNamn: 'Karin Filipsson',
-                    foralderTelefon: '070-123 45 67'
-                },
-                {
-                    id: 'u2',
-                    fornamn: 'Anna',
-                    efternamn: 'Andersson',
-                    fodelsear: 2011,
-                    status: 'godkant',
-                    allergier: '',
-                    skyddadIdentitet: false,
-                    incheckad: true,
-                    incheckadTid: '19:15',
-                    avstangd: false,
-                    foralderNamn: 'Per Andersson',
-                    foralderTelefon: '070-234 56 78'
-                },
-                {
-                    id: 'u3',
-                    fornamn: 'Alex',
-                    efternamn: '(Skyddad)',
-                    fodelsear: 2009,
-                    status: 'godkant',
-                    allergier: 'Laktos',
-                    skyddadIdentitet: true,
-                    incheckad: true,
-                    incheckadTid: '19:20',
-                    avstangd: false,
-                    foralderNamn: 'Kontakt via samordnare',
-                    foralderTelefon: 'Skyddat nummer'
-                },
-                {
-                    id: 'u4',
-                    fornamn: 'Liam',
-                    efternamn: 'Lindberg',
-                    fodelsear: 2012,
-                    status: 'vantar_foralder',
-                    allergier: '',
-                    skyddadIdentitet: false,
-                    incheckad: false,
-                    incheckadTid: null,
-                    avstangd: false,
-                    foralderNamn: 'Maria Lindberg',
-                    foralderTelefon: '070-345 67 89'
-                }
-            ],
+            ungdomar: buildYouthList(),
             resurser: [
-                { id: 'r1', namn: 'Biljardbord 1', ko: [] },
-                { id: 'r2', namn: 'PS5 (FIFA)', ko: ['Anna Andersson'] },
-                { id: 'r3', namn: 'Pingisbord', ko: [] }
+                { id: 'r1', namn: 'Biljard', ko: [] },
+                { id: 'r2', namn: 'Pingis', ko: [] },
+                { id: 'r3', namn: 'TV-spel', ko: ['Anna Andersson'] },
+                { id: 'r4', namn: 'Pysselrum', ko: [] },
+                { id: 'r5', namn: 'Replokal', ko: [] }
             ],
             aktiviteter: [
                 {
@@ -123,6 +149,7 @@
             onskemal: [
                 { id: 'o1', text: 'Nocco Tropical', av: 'Filip Filipsson' }
             ],
+            notiser: [],
             rutiner: {
                 oppning: [
                     { id: 'op1', text: 'Larma av och tänd lokalen', klar: true },
