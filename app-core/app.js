@@ -3,7 +3,9 @@
     const toastEl = document.getElementById('toast');
 
     let currentView = 'start';
-    let ledareSubView = null; // 'qr' | 'manuell' | 'kiosk' | 'banner' | 'aktivitet'
+    let ledareSubView = null; // 'qr' | 'manuell' | 'kiosk' | 'resurser' | 'push' | 'banner' | 'aktivitet'
+    let suspendFormOpen = false;
+    let suspendPreselectId = '';
     let editRutin = { oppning: false, stangning: false };
     let cart = {}; // { kioskItemId: antal }
     let evacSafeIds = new Set();
@@ -25,9 +27,16 @@
             .replace(/"/g, '&quot;');
     }
 
+    function defaultSuspendDate() {
+        const d = new Date();
+        d.setDate(d.getDate() + 7);
+        return d.toISOString().slice(0, 10);
+    }
+
     function go(view) {
         currentView = view;
         ledareSubView = null;
+        suspendFormOpen = false;
         window.scrollTo(0, 0);
         render();
     }
@@ -93,14 +102,21 @@
         const fullName = Store.displayName(u);
 
         const statusBadge = u.avstangd
-            ? `<span class="pill pill-red">Avstängd</span>`
+            ? `<span class="pill pill-red">Avstängd t.o.m. ${esc(u.avstangdTill || '')}</span>`
             : u.status === 'godkant'
                 ? `<span class="pill pill-green">Gårdskort godkänt</span>`
-                : `<span class="pill pill-amber">Väntar på vårdnadshavare</span>`;
+                : `<span class="pill pill-amber">Inväntar föräldrars godkännande</span>`;
+
+        const notisHtml = (s.notiser && s.notiser.length > 0) ? `
+            <div class="surface" style="margin-top:16px; border:2px solid #111;">
+                <p class="kicker">Meddelande från ledarna (${esc(s.notiser[0].tid)})</p>
+                <p style="font-weight:700;">${esc(s.notiser[0].text)}</p>
+            </div>
+        ` : '';
 
         const koerHtml = flags.koer ? `
             <div class="section">
-                <div class="section-header"><h2>Boka spel</h2></div>
+                <div class="section-header"><h2>Boka resurser</h2></div>
                 <div class="stack">
                     ${s.resurser.map(r => {
                         const inQueue = r.ko.includes(fullName);
@@ -223,6 +239,8 @@
                     ${u.allergier ? `<p style="color:#d32f2f; font-weight:700; font-size:14px; margin-top:12px;">Allergi: ${esc(u.allergier)}</p>` : ''}
                 </div>
 
+                ${notisHtml}
+
                 <div class="surface" style="margin-top:20px;">
                     <div class="row">
                         <div>
@@ -248,6 +266,23 @@
         const s = Store.get();
         const gard = Store.getAktivGard();
         const incheckade = s.ungdomar.filter(u => u.incheckad);
+
+        // Filtrera avstängda utifrån chefens inställning (en gård, alla gårdar eller specifika gårdar)
+        const scope = s.tenant.avstangningScope || 'alla';
+        const specifika = s.tenant.avstangningSpecifikaGardar || [];
+        const avstangda = s.ungdomar.filter(u => {
+            if (!u.avstangd) return false;
+            if (scope === 'alla') return true;
+            if (scope === 'en') return u.avstangdGardId === gard.id;
+            if (scope === 'specifika') return specifika.includes(gard.id) || u.avstangdGardId === gard.id;
+            return true;
+        });
+
+        const scopeText = scope === 'alla'
+            ? 'Visas för alla gårdar i kommunen'
+            : scope === 'en'
+                ? `Visas endast för ${gard.namn}`
+                : 'Visas för utvalda gårdar';
 
         let topSubPanel = '';
         if (ledareSubView === 'qr') {
@@ -285,6 +320,32 @@
             `;
         }
 
+        const suspendFormHtml = suspendFormOpen ? `
+            <div id="suspend-form-box" class="surface" style="margin-bottom:16px; border:2px solid #d32f2f;">
+                <div class="row" style="margin-bottom:12px;">
+                    <h3>Ny avstängning</h3>
+                    <button class="btn-link" onclick="App.closeSuspendForm()">Avbryt</button>
+                </div>
+                <div class="field">
+                    <label class="field-label" for="suspend-youth">Välj ungdom</label>
+                    <select id="suspend-youth">
+                        ${s.ungdomar.filter(u => !u.avstangd).map(u => `
+                            <option value="${u.id}" ${u.id === suspendPreselectId ? 'selected' : ''}>${esc(Store.displayName(u))}</option>
+                        `).join('')}
+                    </select>
+                </div>
+                <div class="field">
+                    <label class="field-label" for="suspend-until">Avstängningen upphör (datum)</label>
+                    <input type="date" id="suspend-until" value="${defaultSuspendDate()}" style="width:100%; min-height:52px; padding:12px 14px; font-size:16px; border:2px solid #e5e5e5; border-radius:12px; background:#fafafa;">
+                </div>
+                <div class="field">
+                    <label class="field-label" for="suspend-reason">Orsak</label>
+                    <input type="text" id="suspend-reason" placeholder="Ange orsak till avstängningen...">
+                </div>
+                <button class="btn-primary" style="background:#d32f2f; border-color:#d32f2f;" onclick="App.confirmSuspend()">Bekräfta avstängning</button>
+            </div>
+        ` : '';
+
         let manageSubPanel = '';
         if (ledareSubView === 'kiosk') {
             manageSubPanel = `
@@ -316,6 +377,50 @@
                         <div style="margin-top:18px; padding-top:14px; border-top:1px solid #e0e0e0;">
                             <p class="kicker">Önskemål från ungdomar</p>
                             ${s.onskemal.map(o => `<p class="muted" style="margin-top:4px;">• ${esc(o.text)} (${esc(o.av)})</p>`).join('')}
+                        </div>
+                    ` : ''}
+                </div>
+            `;
+        } else if (ledareSubView === 'resurser') {
+            manageSubPanel = `
+                <div class="surface" style="margin-top:16px;">
+                    <div class="row" style="margin-bottom:14px;">
+                        <h3>Hantera bokningsbara resurser</h3>
+                        <button class="btn-link" onclick="App.setLedareSub(null)">Stäng</button>
+                    </div>
+                    <ul class="list" style="margin-bottom:16px;">
+                        ${s.resurser.map(r => `
+                            <li class="list-item">
+                                <strong>${esc(r.namn)}</strong>
+                                <div class="row" style="gap:6px;">
+                                    <button class="btn-small" onclick="App.renameResource('${r.id}')">Byt namn</button>
+                                    <button class="btn-small danger" onclick="App.deleteResource('${r.id}')">Ta bort</button>
+                                </div>
+                            </li>
+                        `).join('')}
+                    </ul>
+                    <div class="row">
+                        <input type="text" id="new-resource-name" placeholder="Ny resurs (t.ex. Studio)">
+                        <button class="btn-small dark" style="min-height:52px;" onclick="App.addResource()">Lägg till</button>
+                    </div>
+                </div>
+            `;
+        } else if (ledareSubView === 'push') {
+            manageSubPanel = `
+                <div class="surface" style="margin-top:16px;">
+                    <div class="row" style="margin-bottom:12px;">
+                        <h3>Skicka pushmeddelande</h3>
+                        <button class="btn-link" onclick="App.setLedareSub(null)">Stäng</button>
+                    </div>
+                    <div class="field">
+                        <label class="field-label" for="push-input">Meddelande till ungdomarna</label>
+                        <input type="text" id="push-input" placeholder="T.ex. Ikväll bjuder vi på fika kl 20:00!">
+                    </div>
+                    <button class="btn-primary" style="min-height:46px;" onclick="App.sendPush()">Skicka notis</button>
+                    ${(s.notiser && s.notiser.length > 0) ? `
+                        <div style="margin-top:18px; padding-top:14px; border-top:1px solid #e0e0e0;">
+                            <p class="kicker">Skickade notiser</p>
+                            ${s.notiser.slice(0, 5).map(n => `<p class="muted" style="margin-top:4px;">• ${esc(n.tid)} – ${esc(n.text)}</p>`).join('')}
                         </div>
                     ` : ''}
                 </div>
@@ -421,11 +526,32 @@
                                 <li class="list-item">
                                     <div>
                                         <h3>${esc(Store.displayName(u))}</h3>
-                                        <div class="muted">Incheckad ${esc(u.incheckadTid)}${u.allergier ? ` • Allergi: ${esc(u.allergier)}` : ''}</div>
+                                        <div class="muted">Incheckad ${esc(u.incheckadTid)} • ${esc(u.kon)}${u.allergier ? ` • Allergi: ${esc(u.allergier)}` : ''}</div>
                                     </div>
-                                    <button class="btn-small danger" onclick="App.toggleSuspend('${u.id}')">
-                                        ${u.avstangd ? 'Häv' : 'Stäng av'}
-                                    </button>
+                                    <button class="btn-small danger" onclick="App.openSuspendForm('${u.id}')">Stäng av</button>
+                                </li>
+                            `).join('')}
+                        </ul>
+                    `}
+                </div>
+
+                <div class="section">
+                    <div class="section-header">
+                        <h2>Avstängningar</h2>
+                        <button class="btn-small danger" onclick="App.openSuspendForm('')">+ Stäng av ungdom</button>
+                    </div>
+                    <p class="muted" style="margin-bottom:12px;">${esc(scopeText)}</p>
+                    ${suspendFormHtml}
+                    ${avstangda.length === 0 ? `<p class="muted">Inga aktiva avstängningar.</p>` : `
+                        <ul class="list">
+                            ${avstangda.map(u => `
+                                <li class="list-item">
+                                    <div>
+                                        <h3>${esc(Store.displayName(u))}</h3>
+                                        <div class="muted">Upphör: <strong>${esc(u.avstangdTill || 'Ej angivet')}</strong></div>
+                                        <div class="muted">Orsak: ${esc(u.avstangdOrsak || 'Ej angiven')}</div>
+                                    </div>
+                                    <button class="btn-small" onclick="App.liftSuspend('${u.id}')">Häv</button>
                                 </li>
                             `).join('')}
                         </ul>
@@ -436,6 +562,8 @@
                     <div class="section-header"><h2>Hantera gården</h2></div>
                     <div class="stack">
                         <button class="btn-secondary" style="text-align:left;" onclick="App.setLedareSub('kiosk')">Hantera kiosken (utbud & priser)</button>
+                        <button class="btn-secondary" style="text-align:left;" onclick="App.setLedareSub('resurser')">Hantera bokningsbara resurser</button>
+                        <button class="btn-secondary" style="text-align:left;" onclick="App.setLedareSub('push')">Skicka pushmeddelande</button>
                         <button class="btn-secondary" style="text-align:left;" onclick="App.setLedareSub('banner')">Uppdatera info-banner (Ungdomsvy)</button>
                         <button class="btn-secondary" style="text-align:left;" onclick="App.setLedareSub('aktivitet')">Skapa aktivitet</button>
                     </div>
@@ -454,6 +582,8 @@
         const gard = Store.getAktivGard();
         const flags = gard.featureFlags;
         const besok = statPeriod === 'vecka' ? s.statistik.besokVecka : s.statistik.besokManad;
+        const scope = s.tenant.avstangningScope || 'alla';
+        const specifika = s.tenant.avstangningSpecifikaGardar || [];
 
         return `
             <div class="app-shell">
@@ -475,6 +605,28 @@
                     <div class="stat-box">
                         <div class="stat-num">${s.tenant.gardar.length}</div>
                         <div class="stat-label">Aktiva gårdar</div>
+                    </div>
+                </div>
+
+                <div class="section">
+                    <div class="section-header">
+                        <h2>Synlighet för avstängningar</h2>
+                    </div>
+                    <p class="muted" style="margin-bottom:12px;">Välj var en avstängning ska synas för fritidsledare.</p>
+                    <div class="surface">
+                        <div class="field" style="margin-bottom:${scope === 'specifika' ? '14px' : '0'};">
+                            <select onchange="App.setSuspendScope(this.value)">
+                                <option value="alla" ${scope === 'alla' ? 'selected' : ''}>Alla gårdar i kommunen</option>
+                                <option value="en" ${scope === 'en' ? 'selected' : ''}>Endast gården där avstängningen gjordes</option>
+                                <option value="specifika" ${scope === 'specifika' ? 'selected' : ''}>Specifika gårdar</option>
+                            </select>
+                        </div>
+                        ${scope === 'specifika' ? s.tenant.gardar.map(g => `
+                            <label class="check-row">
+                                <input type="checkbox" ${specifika.includes(g.id) ? 'checked' : ''} onchange="App.toggleSuspendGard('${g.id}')">
+                                <span>${esc(g.namn)}</span>
+                            </label>
+                        `).join('') : ''}
                     </div>
                 </div>
 
@@ -537,7 +689,7 @@
     // ==================== VY: FÖRÄLDER ====================
     function renderForalder() {
         const s = Store.get();
-        const u = s.ungdomar.find(x => x.id === 'u4') || s.ungdomar[0];
+        const u = s.ungdomar.find(x => x.id === 'u36') || s.ungdomar[0];
         const godkant = u.status === 'godkant';
 
         return `
@@ -701,12 +853,62 @@
             ledareSubView = ledareSubView === sub ? null : sub;
             render();
         },
-        toggleSuspend(id) {
+        openSuspendForm(id) {
+            suspendPreselectId = id || '';
+            suspendFormOpen = true;
+            render();
+            const el = document.getElementById('suspend-form-box');
+            if (el) el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        },
+        closeSuspendForm() {
+            suspendFormOpen = false;
+            render();
+        },
+        confirmSuspend() {
+            const id = document.getElementById('suspend-youth')?.value;
+            const until = document.getElementById('suspend-until')?.value;
+            const reason = (document.getElementById('suspend-reason')?.value || '').trim();
+            if (!id || !until || !reason) {
+                return showToast('Välj ungdom, slutdatum och ange orsak');
+            }
             const u = Store.get().ungdomar.find(x => x.id === id);
-            u.avstangd = !u.avstangd;
-            if (u.avstangd) u.incheckad = false;
-            Store.log(`${Store.displayName(u)} ${u.avstangd ? 'avstängd' : 'avstängning hävd'}`);
-            showToast(u.avstangd ? `${u.fornamn} är avstängd` : `Avstängning hävd`);
+            if (!u) return;
+            u.avstangd = true;
+            u.avstangdTill = until;
+            u.avstangdOrsak = reason;
+            u.avstangdGardId = Store.getAktivGard().id;
+            u.incheckad = false;
+            u.incheckadTid = null;
+            suspendFormOpen = false;
+            Store.log(`${Store.displayName(u)} avstängd t.o.m. ${until} (${reason})`);
+            showToast(`${u.fornamn} är avstängd t.o.m. ${until}`);
+            render();
+        },
+        liftSuspend(id) {
+            const u = Store.get().ungdomar.find(x => x.id === id);
+            if (!u) return;
+            u.avstangd = false;
+            u.avstangdTill = null;
+            u.avstangdOrsak = '';
+            u.avstangdGardId = null;
+            Store.log(`Avstängning hävd för ${Store.displayName(u)}`);
+            showToast(`Avstängning hävd för ${u.fornamn}`);
+            render();
+        },
+        setSuspendScope(val) {
+            Store.get().tenant.avstangningScope = val;
+            Store.log(`Synlighet för avstängningar ändrad till: ${val}`);
+            showToast('Synlighet uppdaterad');
+            render();
+        },
+        toggleSuspendGard(gardId) {
+            const t = Store.get().tenant;
+            if (!t.avstangningSpecifikaGardar) t.avstangningSpecifikaGardar = [];
+            const idx = t.avstangningSpecifikaGardar.indexOf(gardId);
+            if (idx >= 0) t.avstangningSpecifikaGardar.splice(idx, 1);
+            else t.avstangningSpecifikaGardar.push(gardId);
+            Store.save();
+            showToast('Uppdaterade valda gårdar');
             render();
         },
         addKioskItem() {
@@ -735,6 +937,42 @@
             s.kiosk = s.kiosk.filter(k => k.id !== id);
             Store.save();
             showToast('Vara borttagen');
+            render();
+        },
+        addResource() {
+            const name = (document.getElementById('new-resource-name')?.value || '').trim();
+            if (!name) return showToast('Ange namn på resursen');
+            Store.get().resurser.push({ id: 'r' + Date.now(), namn: name, ko: [] });
+            Store.save();
+            showToast(`${name} tillagd`);
+            render();
+        },
+        renameResource(id) {
+            const r = Store.get().resurser.find(x => x.id === id);
+            const next = prompt('Nytt namn på resurs:', r.namn);
+            if (next === null || !next.trim()) return;
+            r.namn = next.trim();
+            Store.save();
+            showToast('Namn uppdaterat');
+            render();
+        },
+        deleteResource(id) {
+            const s = Store.get();
+            s.resurser = s.resurser.filter(x => x.id !== id);
+            Store.save();
+            showToast('Resurs borttagen');
+            render();
+        },
+        sendPush() {
+            const input = document.getElementById('push-input');
+            const text = (input?.value || '').trim();
+            if (!text) return showToast('Skriv ett meddelande först');
+            const tid = new Date().toLocaleTimeString('sv-SE', { hour: '2-digit', minute: '2-digit' });
+            const s = Store.get();
+            if (!s.notiser) s.notiser = [];
+            s.notiser.unshift({ id: 'n' + Date.now(), tid, text });
+            Store.log(`Pushmeddelande skickat: "${text}"`);
+            showToast('Pushmeddelande skickat till ungdomarna');
             render();
         },
         saveBanner() {
