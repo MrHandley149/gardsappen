@@ -3,7 +3,8 @@
     const toastEl = document.getElementById('toast');
 
     let currentView = 'start';
-    let ledareSubView = null; // 'qr' | 'manuell' | 'kiosk' | 'resurser' | 'onskemal' | 'push' | 'banner' | 'aktivitet'
+    let ledareSubView = null; // 'qr' | 'manuell' | 'kiosk' | 'resurser' | 'onskemal' | 'regler' | 'push' | 'banner' | 'aktivitet'
+    let ungdomRulesOpen = false;
     let manualSearch = '';
     let suspendFormOpen = false;
     let suspendPreselectId = '';
@@ -253,6 +254,7 @@
         const u = Store.getAktivUngdom();
         const flags = gard.featureFlags;
         const fullName = Store.displayName(u);
+        const regler = s.regler || { gard: [], spel: [] };
 
         const statusBadge = u.avstangd
             ? `<span class="pill pill-red">Avstängd t.o.m. ${esc(u.avstangdTill || '')}</span>`
@@ -266,6 +268,31 @@
                 <p style="font-weight:700;">${esc(s.notiser[0].text)}</p>
             </div>
         ` : '';
+
+        const reglerHtml = `
+            <div class="section">
+                <button class="btn-secondary" style="text-align:left;" onclick="App.toggleUngdomRules()">
+                    ${ungdomRulesOpen ? 'Dölj regler (Gården, Biljard & Pingis)' : 'Regler (Gården, Biljard & Pingis)'}
+                </button>
+                ${ungdomRulesOpen ? `
+                    <div class="surface" style="margin-top:12px;">
+                        <p class="kicker">Gårdsregler</p>
+                        <ul class="list" style="margin-bottom:18px;">
+                            ${regler.gard.map(r => `<li class="list-item" style="padding:8px 0;"><span>• ${esc(r.text)}</span></li>`).join('')}
+                        </ul>
+                        <p class="kicker">Spelregler (Biljard & Pingis)</p>
+                        <div class="stack" style="margin-top:8px;">
+                            ${regler.spel.map(r => `
+                                <div style="padding:10px 0; border-bottom:1px solid #e5e5e5;">
+                                    <div style="margin-bottom:4px;"><span class="pill pill-dark" style="margin-right:6px;">${esc(r.kategori)}</span><strong>${esc(r.titel)}</strong></div>
+                                    <p class="muted" style="font-size:13px;">${esc(r.text)}</p>
+                                </div>
+                            `).join('')}
+                        </div>
+                    </div>
+                ` : ''}
+            </div>
+        `;
 
         const koerHtml = flags.koer ? `
             <div class="section">
@@ -406,6 +433,7 @@
                     </div>
                 </div>
 
+                ${reglerHtml}
                 ${koerHtml}
                 ${lagHtml}
                 ${kioskHtml}
@@ -422,6 +450,7 @@
         const uteUrZon = incheckade.filter(u => u.geofenceStatus === 'ute_tillfalligt');
         const springerUtIn = incheckade.filter(u => (u.utInAntal || 0) >= 2);
         const aktivaMonster = (s.monsterAlerts || []).filter(m => !m.hanterad);
+        const regler = s.regler || { gard: [], spel: [] };
 
         const scope = s.tenant.avstangningScope || 'alla';
         const specifika = s.tenant.avstangningSpecifikaGardar || [];
@@ -618,6 +647,42 @@
                     `}
                 </div>
             `,
+            regler: `
+                <div class="surface">
+                    <div class="row" style="margin-bottom:14px;">
+                        <h3>Regler (Gården & Spelregler)</h3>
+                        <button class="btn-link" onclick="App.setLedareSub(null)">Stäng</button>
+                    </div>
+                    <p class="kicker">Gårdsregler (redigeras av chef)</p>
+                    <ul class="list" style="margin-bottom:18px;">
+                        ${regler.gard.map(r => `<li class="list-item" style="padding:8px 0;"><span>• ${esc(r.text)}</span></li>`).join('')}
+                    </ul>
+                    <p class="kicker">Spelregler (Biljard, Pingis m.m.)</p>
+                    <ul class="list" style="margin-bottom:16px;">
+                        ${regler.spel.map(r => `
+                            <li class="list-item" style="flex-direction:column; align-items:stretch;">
+                                <div class="row">
+                                    <div><span class="pill pill-dark" style="margin-right:6px;">${esc(r.kategori)}</span><strong>${esc(r.titel)}</strong></div>
+                                    <div class="row" style="gap:6px;">
+                                        <button class="btn-small" onclick="App.editGameRule('${r.id}')">Ändra</button>
+                                        <button class="btn-small danger" onclick="App.deleteGameRule('${r.id}')">Ta bort</button>
+                                    </div>
+                                </div>
+                                <p class="muted" style="font-size:13px; margin-top:6px;">${esc(r.text)}</p>
+                            </li>
+                        `).join('')}
+                    </ul>
+                    <p class="kicker" style="margin-bottom:8px;">Lägg till spelregel</p>
+                    <div class="grid-2" style="margin-bottom:10px;">
+                        <input type="text" id="new-rule-cat" placeholder="Spel (t.ex. Biljard)">
+                        <input type="text" id="new-rule-title" placeholder="Spelsätt (t.ex. Färg)">
+                    </div>
+                    <div class="field">
+                        <input type="text" id="new-rule-text" placeholder="Skriv reglerna kortfattat...">
+                    </div>
+                    <button class="btn-primary" style="min-height:46px;" onclick="App.addGameRule()">Lägg till spelregel</button>
+                </div>
+            `,
             push: `
                 <div class="surface">
                     <div class="row" style="margin-bottom:12px;">
@@ -694,6 +759,7 @@
             ['kiosk', 'Hantera kiosken (utbud, lager & priser)'],
             ['resurser', 'Hantera bokningsbara resurser & köer'],
             ['onskemal', `Hantera önskemål från ungdomar (${s.onskemal.length})`],
+            ['regler', 'Regler (Gården & Spelregler)'],
             ['push', 'Skicka pushmeddelande'],
             ['banner', 'Uppdatera info-banner (Ungdomsvy)'],
             ['aktivitet', 'Aktiviteter & lag']
@@ -872,6 +938,7 @@
         const besok = statPeriod === 'vecka' ? s.statistik.besokVecka : s.statistik.besokManad;
         const scope = s.tenant.avstangningScope || 'alla';
         const specifika = s.tenant.avstangningSpecifikaGardar || [];
+        const gardRegler = (s.regler && s.regler.gard) || [];
 
         return `
             <div class="app-shell">
@@ -893,6 +960,29 @@
                     <div class="stat-box">
                         <div class="stat-num">${s.tenant.gardar.length}</div>
                         <div class="stat-label">Aktiva gårdar</div>
+                    </div>
+                </div>
+
+                <div class="section">
+                    <div class="section-header">
+                        <h2>Gårdsregler (gäller alla gårdar)</h2>
+                    </div>
+                    <div class="surface">
+                        <ul class="list" style="margin-bottom:14px;">
+                            ${gardRegler.map(r => `
+                                <li class="list-item">
+                                    <span>${esc(r.text)}</span>
+                                    <div class="row" style="gap:6px;">
+                                        <button class="btn-small" onclick="App.editGardRule('${r.id}')">Ändra</button>
+                                        <button class="btn-small danger" onclick="App.deleteGardRule('${r.id}')">Ta bort</button>
+                                    </div>
+                                </li>
+                            `).join('')}
+                        </ul>
+                        <div class="row">
+                            <input type="text" id="new-gard-rule" placeholder="Ny gårdsregel...">
+                            <button class="btn-small dark" style="min-height:52px;" onclick="App.addGardRule()">Lägg till</button>
+                        </div>
                     </div>
                 </div>
 
@@ -1093,6 +1183,68 @@
             cart = {};
             evacSafeIds.clear();
             showToast('All testdata återställd');
+            render();
+        },
+        toggleUngdomRules() {
+            ungdomRulesOpen = !ungdomRulesOpen;
+            render();
+        },
+        addGardRule() {
+            const text = (document.getElementById('new-gard-rule')?.value || '').trim();
+            if (!text) return showToast('Skriv en regel först');
+            const s = Store.get();
+            if (!s.regler) s.regler = { gard: [], spel: [] };
+            s.regler.gard.push({ id: 'gr' + Date.now(), text });
+            Store.log(`Gårdsregel tillagd: "${text}"`);
+            showToast('Gårdsregel tillagd');
+            render();
+        },
+        editGardRule(id) {
+            const r = (Store.get().regler?.gard || []).find(x => x.id === id);
+            if (!r) return;
+            const next = prompt('Ändra gårdsregel:', r.text);
+            if (next === null || !next.trim()) return;
+            r.text = next.trim();
+            Store.log('Gårdsregel uppdaterad');
+            showToast('Gårdsregel uppdaterad');
+            render();
+        },
+        deleteGardRule(id) {
+            const s = Store.get();
+            if (!s.regler) return;
+            s.regler.gard = s.regler.gard.filter(x => x.id !== id);
+            Store.log('Gårdsregel borttagen');
+            showToast('Gårdsregel borttagen');
+            render();
+        },
+        addGameRule() {
+            const kategori = (document.getElementById('new-rule-cat')?.value || '').trim();
+            const titel = (document.getElementById('new-rule-title')?.value || '').trim();
+            const text = (document.getElementById('new-rule-text')?.value || '').trim();
+            if (!kategori || !titel || !text) return showToast('Fyll i spel, spelsätt och regler');
+            const s = Store.get();
+            if (!s.regler) s.regler = { gard: [], spel: [] };
+            s.regler.spel.push({ id: 'sr' + Date.now(), kategori, titel, text });
+            Store.save();
+            showToast('Spelregel tillagd');
+            render();
+        },
+        editGameRule(id) {
+            const r = (Store.get().regler?.spel || []).find(x => x.id === id);
+            if (!r) return;
+            const next = prompt(`Ändra regler för ${r.kategori} – ${r.titel}:`, r.text);
+            if (next === null || !next.trim()) return;
+            r.text = next.trim();
+            Store.save();
+            showToast('Spelregel uppdaterad');
+            render();
+        },
+        deleteGameRule(id) {
+            const s = Store.get();
+            if (!s.regler) return;
+            s.regler.spel = s.regler.spel.filter(x => x.id !== id);
+            Store.save();
+            showToast('Spelregel borttagen');
             render();
         },
         setManualSearch(val) {
