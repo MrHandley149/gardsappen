@@ -4,11 +4,14 @@
 
     let currentView = 'start';
     let ledareSubView = null; // 'qr' | 'manuell' | 'kiosk' | 'resurser' | 'onskemal' | 'push' | 'banner' | 'aktivitet'
+    let manualSearch = '';
     let suspendFormOpen = false;
     let suspendPreselectId = '';
     let showAllCheckedIn = false;
     let checkinSearch = '';
     let expandedContactId = null;
+    let editingYouthId = null;
+    let parentSignerIndex = 0;
     let editRutin = { oppning: false, stangning: false };
     let cart = {}; // { kioskItemId: antal }
     let evacSafeIds = new Set();
@@ -41,6 +44,7 @@
         ledareSubView = null;
         suspendFormOpen = false;
         expandedContactId = null;
+        editingYouthId = null;
         window.scrollTo(0, 0);
         render();
     }
@@ -55,6 +59,108 @@
                 </div>
                 <div class="topbar-actions">
                     ${showBack ? `<button class="btn-link" onclick="App.go('start')">Byt vy</button>` : ''}
+                </div>
+            </div>
+        `;
+    }
+
+    function renderManualSearchResultsHtml() {
+        const s = Store.get();
+        const ejIncheckade = s.ungdomar.filter(u => !u.incheckad && !u.avstangd);
+        const q = manualSearch.trim().toLowerCase();
+        const matches = q
+            ? ejIncheckade.filter(u => Store.displayName(u).toLowerCase().includes(q))
+            : ejIncheckade;
+
+        if (matches.length === 0) {
+            return `<p class="muted" style="margin-bottom:14px;">${q ? `Ingen ej incheckad ungdom matchade "${esc(manualSearch)}".` : 'Alla befintliga ungdomar är redan incheckade.'}</p>`;
+        }
+
+        return `
+            <ul class="list" style="margin-bottom:16px;">
+                ${matches.map(u => `
+                    <li class="list-item">
+                        <div>
+                            <strong>${esc(Store.displayName(u))}</strong>
+                            <div class="muted" style="font-size:12px;">${esc(u.fodelsedatum || '')} • ${u.status === 'godkant' ? 'Godkänt kort' : 'Inväntar föräldrars godkännande'}</div>
+                        </div>
+                        <button class="btn-small dark" onclick="App.toggleCheckin('${u.id}')">Checka in</button>
+                    </li>
+                `).join('')}
+            </ul>
+        `;
+    }
+
+    function renderYouthCardPanel(u) {
+        const vh = u.vardnadshavare || [];
+        const vh1 = vh[0] || { namn: '', telefon: '', signerat: false };
+        const vh2 = vh[1] || { namn: '', telefon: '', signerat: false };
+
+        if (editingYouthId === u.id) {
+            return `
+                <div class="surface" style="margin-top:10px; border:2px solid #111;">
+                    <div class="row" style="margin-bottom:12px;">
+                        <p class="kicker" style="margin-bottom:0;">Redigera gårdskort</p>
+                        <button class="btn-link" onclick="App.cancelEditYouth()">Avbryt</button>
+                    </div>
+                    <div class="grid-2">
+                        <div class="field"><label class="field-label">Förnamn</label><input type="text" id="ey-fornamn" value="${esc(u.fornamn)}"></div>
+                        <div class="field"><label class="field-label">Efternamn</label><input type="text" id="ey-efternamn" value="${esc(u.efternamn)}"></div>
+                    </div>
+                    <div class="grid-2">
+                        <div class="field"><label class="field-label">År-Mån-Dag</label><input type="date" id="ey-fodelsedatum" value="${esc(u.fodelsedatum || '')}" style="width:100%; min-height:52px; padding:12px 14px; font-size:16px; border:2px solid #e5e5e5; border-radius:12px; background:#fafafa;"></div>
+                        <div class="field">
+                            <label class="field-label">Kön</label>
+                            <select id="ey-kon">
+                                <option value="Kille" ${u.kon === 'Kille' ? 'selected' : ''}>Kille</option>
+                                <option value="Tjej" ${u.kon === 'Tjej' ? 'selected' : ''}>Tjej</option>
+                                <option value="Vill ej uppge" ${u.kon === 'Vill ej uppge' ? 'selected' : ''}>Vill ej uppge</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="field"><label class="field-label">Adress</label><input type="text" id="ey-adress" value="${esc(u.adress || '')}"></div>
+                    <div class="field"><label class="field-label">Mobilnr (ungdom)</label><input type="text" id="ey-mobil" value="${esc(u.mobil || '')}"></div>
+                    <div class="field"><label class="field-label">Allergier</label><input type="text" id="ey-allergier" value="${esc(u.allergier || '')}"></div>
+                    <div class="field"><label class="field-label">Viktigt att veta</label><input type="text" id="ey-viktigt" value="${esc(u.viktigtAttVeta || '')}"></div>
+                    <div class="grid-2">
+                        <div class="field"><label class="field-label">Vårdnadshavare 1 – Namn</label><input type="text" id="ey-vh1-namn" value="${esc(vh1.namn)}"></div>
+                        <div class="field"><label class="field-label">Vårdnadshavare 1 – Mobil</label><input type="text" id="ey-vh1-tel" value="${esc(vh1.telefon)}"></div>
+                    </div>
+                    <div class="grid-2">
+                        <div class="field"><label class="field-label">Vårdnadshavare 2 – Namn (valfri)</label><input type="text" id="ey-vh2-namn" value="${esc(vh2.namn)}"></div>
+                        <div class="field"><label class="field-label">Vårdnadshavare 2 – Mobil</label><input type="text" id="ey-vh2-tel" value="${esc(vh2.telefon)}"></div>
+                    </div>
+                    <label class="check-row" style="border-bottom:none; padding:4px 0 14px; font-size:14px;">
+                        <input type="checkbox" id="ey-skyddad" ${u.skyddadIdentitet ? 'checked' : ''}>
+                        <span>Skyddat ID</span>
+                    </label>
+                    <button class="btn-primary" style="min-height:46px;" onclick="App.saveEditYouth('${u.id}')">Spara ändringar</button>
+                </div>
+            `;
+        }
+
+        return `
+            <div class="surface" style="margin-top:10px; padding:14px;">
+                <div class="row" style="margin-bottom:10px;">
+                    <p class="kicker" style="margin-bottom:0;">Gårdskort</p>
+                    <button class="btn-link" onclick="App.startEditYouth('${u.id}')">Redigera gårdskort</button>
+                </div>
+                <div class="muted" style="font-size:13px; line-height:1.6;">
+                    <div><strong>Namn:</strong> ${esc(u.fornamn)} ${esc(u.efternamn)}</div>
+                    <div><strong>Födelsedatum:</strong> ${esc(u.fodelsedatum || 'Ej angivet')}</div>
+                    <div><strong>Adress:</strong> ${esc(u.adress || 'Ej angiven')}</div>
+                    <div><strong>Mobil (ungdom):</strong> ${esc(u.mobil || 'Ej angivet')}</div>
+                    <div><strong>Allergier:</strong> ${esc(u.allergier || 'Inga angivna')}</div>
+                    <div><strong>Viktigt att veta:</strong> ${esc(u.viktigtAttVeta || 'Inget angivet')}</div>
+                </div>
+                <div style="margin-top:12px; padding-top:10px; border-top:1px solid #e5e5e5;">
+                    <p class="kicker">Vårdnadshavare</p>
+                    ${vh.length === 0 ? `<div class="muted" style="font-size:13px;">Ingen vårdnadshavare angiven</div>` : vh.map((v, idx) => `
+                        <div class="row" style="padding:4px 0; font-size:13px;">
+                            <div><strong>${idx + 1}. ${esc(v.namn)}</strong> • ${esc(v.telefon)}</div>
+                            <span class="pill ${v.signerat ? 'pill-green' : 'pill-amber'}">${v.signerat ? 'BankID OK' : 'Ej signerat'}</span>
+                        </div>
+                    `).join('')}
                 </div>
             </div>
         `;
@@ -88,20 +194,15 @@
                         <div class="row">
                             <div>
                                 <h3>${esc(Store.displayName(u))} ${u.geofenceStatus === 'ute_tillfalligt' ? '<span class="pill pill-amber">Ute ur zonen</span>' : ''}</h3>
-                                <div class="muted">Incheckad ${esc(u.incheckadTid)} • ${esc(u.kon)}${u.allergier ? ` • Allergi: ${esc(u.allergier)}` : ''}</div>
+                                <div class="muted">${esc(u.fodelsedatum || '')} • Incheckad ${esc(u.incheckadTid)} • ${esc(u.kon)}${u.allergier ? ` • Allergi: ${esc(u.allergier)}` : ''}</div>
+                                ${u.viktigtAttVeta ? `<div class="muted" style="font-size:12px;">Viktigt: ${esc(u.viktigtAttVeta)}</div>` : ''}
                             </div>
                             <div class="row" style="gap:6px;">
-                                <button class="btn-small" onclick="App.toggleContact('${u.id}')">Kontakt</button>
+                                <button class="btn-small" onclick="App.toggleContact('${u.id}')">Gårdskort</button>
                                 <button class="btn-small danger" onclick="App.openSuspendForm('${u.id}')">Stäng av</button>
                             </div>
                         </div>
-                        ${expandedContactId === u.id ? `
-                            <div class="surface" style="margin-top:10px; padding:12px 14px;">
-                                <p class="kicker">Vårdnadshavare</p>
-                                <strong>${esc(u.foralderNamn)}</strong>
-                                <div class="muted">${esc(u.foralderTelefon)}</div>
-                            </div>
-                        ` : ''}
+                        ${expandedContactId === u.id ? renderYouthCardPanel(u) : ''}
                     </li>
                 `).join('')}
             </ul>
@@ -346,7 +447,7 @@
                     <div style="width:160px; height:160px; margin:16px auto; background:#111; color:#fff; display:flex; align-items:center; justify-content:center; border-radius:12px; font-weight:900; font-size:20px; letter-spacing:2px;">
                         QR-KOD
                     </div>
-                    <p class="muted" style="margin-bottom:14px;">Ungdomar skannar koden för kvällens första incheckning.</p>
+                    <p class="muted" style="margin-bottom:14px;">Befintliga besökare checkas in direkt. Nya besökare får upp gårdskortet.</p>
                     <button class="btn-secondary" onclick="App.setLedareSub(null)">Stäng</button>
                 </div>
             `;
@@ -357,19 +458,49 @@
                         <h3>Manuell incheckning</h3>
                         <button class="btn-link" onclick="App.setLedareSub(null)">Stäng</button>
                     </div>
-                    <ul class="list">
-                        ${s.ungdomar.map(u => `
-                            <li class="list-item">
-                                <div>
-                                    <strong>${esc(Store.displayName(u))}</strong>
-                                    <div class="muted" style="font-size:12px;">${u.status === 'godkant' ? 'Godkänt kort' : 'Inväntar föräldrars godkännande'}</div>
-                                </div>
-                                <button class="btn-small ${u.incheckad ? '' : 'dark'}" onclick="App.toggleCheckin('${u.id}')">
-                                    ${u.incheckad ? 'Checka ut' : 'Checka in'}
-                                </button>
-                            </li>
-                        `).join('')}
-                    </ul>
+                    <p class="kicker">Glömt / urladdad mobil (befintlig ungdom)</p>
+                    <div class="field" style="margin-bottom:10px;">
+                        <input type="text" id="manual-search" value="${esc(manualSearch)}" placeholder="Sök ej incheckad ungdom..." oninput="App.setManualSearch(this.value)">
+                    </div>
+                    <div id="manual-search-results">
+                        ${renderManualSearchResultsHtml()}
+                    </div>
+
+                    <div style="margin-top:18px; padding-top:16px; border-top:1px solid #e0e0e0;">
+                        <p class="kicker" style="margin-bottom:10px;">Första besöket (ej mobil) / Skyddat ID</p>
+                        <div class="grid-2">
+                            <div class="field"><label class="field-label">Förnamn *</label><input type="text" id="m-fornamn" placeholder="Förnamn"></div>
+                            <div class="field"><label class="field-label">Efternamn</label><input type="text" id="m-efternamn" placeholder="Efternamn"></div>
+                        </div>
+                        <div class="grid-2">
+                            <div class="field"><label class="field-label">År-Mån-Dag</label><input type="date" id="m-fodelsedatum" style="width:100%; min-height:52px; padding:12px 14px; font-size:16px; border:2px solid #e5e5e5; border-radius:12px; background:#fafafa;"></div>
+                            <div class="field">
+                                <label class="field-label">Kön</label>
+                                <select id="m-kon">
+                                    <option value="Kille">Kille</option>
+                                    <option value="Tjej">Tjej</option>
+                                    <option value="Vill ej uppge">Vill ej uppge</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="field"><label class="field-label">Adress</label><input type="text" id="m-adress" placeholder="Gatuadress, ort"></div>
+                        <div class="field"><label class="field-label">Mobilnr (ungdom)</label><input type="text" id="m-mobil" placeholder="070-..."></div>
+                        <div class="field"><label class="field-label">Allergier</label><input type="text" id="m-allergier" placeholder="T.ex. Jordnötter (valfritt)"></div>
+                        <div class="field"><label class="field-label">Viktigt att veta</label><input type="text" id="m-viktigt" placeholder="Valfritt"></div>
+                        <div class="grid-2">
+                            <div class="field"><label class="field-label">Vårdnadshavare 1 – Namn</label><input type="text" id="m-vh1-namn" placeholder="Namn"></div>
+                            <div class="field"><label class="field-label">Vårdnadshavare 1 – Mobil</label><input type="text" id="m-vh1-tel" placeholder="070-..."></div>
+                        </div>
+                        <div class="grid-2">
+                            <div class="field"><label class="field-label">Vårdnadshavare 2 – Namn (valfri)</label><input type="text" id="m-vh2-namn" placeholder="Namn"></div>
+                            <div class="field"><label class="field-label">Vårdnadshavare 2 – Mobil</label><input type="text" id="m-vh2-tel" placeholder="070-..."></div>
+                        </div>
+                        <label class="check-row" style="border-bottom:none; padding:4px 0 14px; font-size:14px;">
+                            <input type="checkbox" id="m-skyddad">
+                            <span>Skyddat ID (döljer efternamn och kontaktuppgifter)</span>
+                        </label>
+                        <button class="btn-primary" style="min-height:46px;" onclick="App.addManualGuest()">Skapa gårdskort & checka in</button>
+                    </div>
                 </div>
             `;
         }
@@ -848,33 +979,55 @@
         const s = Store.get();
         const u = s.ungdomar.find(x => x.id === 'u36') || s.ungdomar[0];
         const godkant = u.status === 'godkant';
+        const vh = u.vardnadshavare || [];
+        if (parentSignerIndex >= vh.length) parentSignerIndex = 0;
+        const aktivVh = vh[parentSignerIndex] || { namn: 'Vårdnadshavare', telefon: '', signerat: false };
 
         return `
             <div class="app-shell">
                 ${topbar('Förälder')}
 
-                <p class="kicker">Digital signering</p>
+                <p class="kicker">Digital signering (BankID)</p>
                 <h1>Gårdskort</h1>
-                <p class="muted" style="margin-bottom:24px;">Godkänn ditt barns gårdskort med BankID och håll kontakt- och allergiuppgifter uppdaterade.</p>
+                <p class="muted" style="margin-bottom:24px;">Granska och godkänn ditt barns gårdskort. Det räcker att en vårdnadshavare signerar för att kortet ska bli aktivt.</p>
+
+                ${vh.length > 1 ? `
+                    <div class="field">
+                        <label class="field-label" for="parent-signer">Inloggad som vårdnadshavare (test)</label>
+                        <select id="parent-signer" onchange="App.setParentSigner(this.value)">
+                            ${vh.map((v, i) => `<option value="${i}" ${i === parentSignerIndex ? 'selected' : ''}>${esc(v.namn)} (${v.signerat ? 'Signerat' : 'Ej signerat'})</option>`).join('')}
+                        </select>
+                    </div>
+                ` : ''}
 
                 <div class="surface" style="margin-bottom:20px;">
                     <div class="row" style="margin-bottom:12px;">
                         <div>
                             <p class="kicker">Ungdom</p>
-                            <h3>${esc(u.fornamn)} ${esc(u.efternamn)} (${u.fodelsear})</h3>
+                            <h3>${esc(u.fornamn)} ${esc(u.efternamn)}</h3>
+                            <div class="muted" style="font-size:13px;">${esc(u.fodelsedatum || '')}</div>
                         </div>
                         <span class="pill ${godkant ? 'pill-green' : 'pill-amber'}">${godkant ? 'Godkänt' : 'Ej signerat'}</span>
                     </div>
-                    <p class="muted">Vårdnadshavare: ${esc(u.foralderNamn)} (${esc(u.foralderTelefon)})</p>
+                    <div class="muted" style="font-size:13px; line-height:1.6;">
+                        <div><strong>Adress:</strong> ${esc(u.adress || 'Ej angiven')}</div>
+                        <div><strong>Mobil (ungdom):</strong> ${esc(u.mobil || 'Ej angivet')}</div>
+                        <div><strong>Din kontakt:</strong> ${esc(aktivVh.namn)} (${esc(aktivVh.telefon)})</div>
+                    </div>
                 </div>
 
                 <div class="field">
-                    <label class="field-label" for="parent-allergy">Allergier / viktig information</label>
-                    <input type="text" id="parent-allergy" value="${esc(u.allergier)}" placeholder="T.ex. Jordnötter, laktos (lämna tomt om inget)">
+                    <label class="field-label" for="parent-allergy">Allergier</label>
+                    <input type="text" id="parent-allergy" value="${esc(u.allergier || '')}" placeholder="T.ex. Jordnötter, laktos (lämna tomt om inget)">
+                </div>
+
+                <div class="field">
+                    <label class="field-label" for="parent-viktigt">Viktigt att veta</label>
+                    <input type="text" id="parent-viktigt" value="${esc(u.viktigtAttVeta || '')}" placeholder="T.ex. medicin, anpassningar, hemgångstid">
                 </div>
 
                 <button class="btn-bankid" onclick="App.signBankId('${u.id}')">
-                    ${godkant ? 'Uppdatera uppgifter med BankID' : 'Godkänn & signera med BankID'}
+                    ${aktivVh.signerat ? 'Uppdatera uppgifter med BankID' : 'Godkänn & signera med BankID'}
                 </button>
             </div>
         `;
@@ -942,6 +1095,65 @@
             showToast('All testdata återställd');
             render();
         },
+        setManualSearch(val) {
+            manualSearch = val;
+            const el = document.getElementById('manual-search-results');
+            if (el) el.innerHTML = renderManualSearchResultsHtml();
+        },
+        addManualGuest() {
+            const fornamn = (document.getElementById('m-fornamn')?.value || '').trim();
+            if (!fornamn) return showToast('Ange minst förnamn');
+            const skyddad = !!document.getElementById('m-skyddad')?.checked;
+            const efternamn = skyddad ? '(Skyddad)' : ((document.getElementById('m-efternamn')?.value || '').trim());
+            const fodelsedatum = document.getElementById('m-fodelsedatum')?.value || '';
+            const kon = document.getElementById('m-kon')?.value || 'Vill ej uppge';
+            const adress = skyddad ? 'Skyddad uppgift' : ((document.getElementById('m-adress')?.value || '').trim());
+            const mobil = skyddad ? 'Skyddad uppgift' : ((document.getElementById('m-mobil')?.value || '').trim());
+            const allergier = (document.getElementById('m-allergier')?.value || '').trim();
+            const viktigtAttVeta = (document.getElementById('m-viktigt')?.value || '').trim();
+
+            const vardnadshavare = [];
+            if (skyddad) {
+                vardnadshavare.push({ namn: 'Kontakt via samordnare', telefon: 'Skyddat nummer', signerat: false });
+            } else {
+                const vh1Namn = (document.getElementById('m-vh1-namn')?.value || '').trim();
+                const vh1Tel = (document.getElementById('m-vh1-tel')?.value || '').trim();
+                if (vh1Namn || vh1Tel) vardnadshavare.push({ namn: vh1Namn || 'Vårdnadshavare 1', telefon: vh1Tel, signerat: false });
+                const vh2Namn = (document.getElementById('m-vh2-namn')?.value || '').trim();
+                const vh2Tel = (document.getElementById('m-vh2-tel')?.value || '').trim();
+                if (vh2Namn || vh2Tel) vardnadshavare.push({ namn: vh2Namn || 'Vårdnadshavare 2', telefon: vh2Tel, signerat: false });
+            }
+
+            const tid = new Date().toLocaleTimeString('sv-SE', { hour: '2-digit', minute: '2-digit' });
+            const ny = {
+                id: 'u' + Date.now(),
+                fornamn,
+                efternamn,
+                fodelsedatum,
+                kon,
+                adress,
+                mobil,
+                status: 'vantar_foralder',
+                allergier,
+                viktigtAttVeta,
+                skyddadIdentitet: skyddad,
+                incheckad: true,
+                incheckadTid: tid,
+                geofenceStatus: 'inne',
+                utInAntal: 0,
+                avstangd: false,
+                avstangdTill: null,
+                avstangdOrsak: '',
+                avstangdGardId: null,
+                vardnadshavare
+            };
+
+            Store.get().ungdomar.unshift(ny);
+            Store.log(`Manuell incheckning (ny): ${Store.displayName(ny)}`);
+            ledareSubView = null;
+            showToast(`${ny.fornamn} skapad och incheckad`);
+            render();
+        },
         setCheckinSearch(val) {
             checkinSearch = val;
             const container = document.getElementById('checkin-list-container');
@@ -953,8 +1165,47 @@
         },
         toggleContact(id) {
             expandedContactId = expandedContactId === id ? null : id;
+            editingYouthId = null;
             const container = document.getElementById('checkin-list-container');
             if (container) container.innerHTML = renderCheckedInItemsHtml();
+        },
+        startEditYouth(id) {
+            editingYouthId = id;
+            const container = document.getElementById('checkin-list-container');
+            if (container) container.innerHTML = renderCheckedInItemsHtml();
+        },
+        cancelEditYouth() {
+            editingYouthId = null;
+            const container = document.getElementById('checkin-list-container');
+            if (container) container.innerHTML = renderCheckedInItemsHtml();
+        },
+        saveEditYouth(id) {
+            const u = Store.get().ungdomar.find(x => x.id === id);
+            if (!u) return;
+            const prevVh = u.vardnadshavare || [];
+            u.fornamn = (document.getElementById('ey-fornamn')?.value || '').trim() || u.fornamn;
+            u.efternamn = (document.getElementById('ey-efternamn')?.value || '').trim();
+            u.fodelsedatum = document.getElementById('ey-fodelsedatum')?.value || '';
+            u.kon = document.getElementById('ey-kon')?.value || u.kon;
+            u.adress = (document.getElementById('ey-adress')?.value || '').trim();
+            u.mobil = (document.getElementById('ey-mobil')?.value || '').trim();
+            u.allergier = (document.getElementById('ey-allergier')?.value || '').trim();
+            u.viktigtAttVeta = (document.getElementById('ey-viktigt')?.value || '').trim();
+            u.skyddadIdentitet = !!document.getElementById('ey-skyddad')?.checked;
+
+            const nyVh = [];
+            const vh1Namn = (document.getElementById('ey-vh1-namn')?.value || '').trim();
+            const vh1Tel = (document.getElementById('ey-vh1-tel')?.value || '').trim();
+            if (vh1Namn || vh1Tel) nyVh.push({ namn: vh1Namn, telefon: vh1Tel, signerat: !!(prevVh[0] && prevVh[0].signerat) });
+            const vh2Namn = (document.getElementById('ey-vh2-namn')?.value || '').trim();
+            const vh2Tel = (document.getElementById('ey-vh2-tel')?.value || '').trim();
+            if (vh2Namn || vh2Tel) nyVh.push({ namn: vh2Namn, telefon: vh2Tel, signerat: !!(prevVh[1] && prevVh[1].signerat) });
+            u.vardnadshavare = nyVh;
+
+            editingYouthId = null;
+            Store.log(`Gårdskort uppdaterat av ledare för ${Store.displayName(u)}`);
+            showToast('Gårdskort sparat');
+            render();
         },
         simulateGeofence() {
             const s = Store.get();
@@ -1314,13 +1565,24 @@
             showToast('Personal borttagen');
             render();
         },
+        setParentSigner(idx) {
+            parentSignerIndex = parseInt(idx, 10) || 0;
+            render();
+        },
         signBankId(id) {
             const u = Store.get().ungdomar.find(x => x.id === id);
-            const allergy = (document.getElementById('parent-allergy')?.value || '').trim();
-            u.allergier = allergy;
+            if (!u) return;
+            u.allergier = (document.getElementById('parent-allergy')?.value || '').trim();
+            u.viktigtAttVeta = (document.getElementById('parent-viktigt')?.value || '').trim();
+            const vh = u.vardnadshavare || [];
+            if (vh[parentSignerIndex]) {
+                vh[parentSignerIndex].signerat = true;
+            }
+            // Alternativ A: det räcker att en vårdnadshavare signerar
             u.status = 'godkant';
-            Store.log(`Gårdskort signerat med BankID för ${u.fornamn}`);
-            showToast('Signerat med BankID! Gårdskortet är nu aktivt.');
+            const signerName = vh[parentSignerIndex] ? vh[parentSignerIndex].namn : 'Vårdnadshavare';
+            Store.log(`Gårdskort signerat med BankID av ${signerName} för ${u.fornamn}`);
+            showToast(`Signerat av ${signerName}! Gårdskortet är nu godkänt.`);
             render();
         }
     };
