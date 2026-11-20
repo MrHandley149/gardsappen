@@ -1,46 +1,83 @@
 (function () {
-    const STORAGE_KEY = 'gardsappen_live_v4';
+    const STORAGE_KEY = 'gardsappen_live_v5';
 
     function buildYouthList() {
         const list = [
-            { id: 'u1', fornamn: 'Filip', efternamn: 'Filipsson', fodelsear: 2010, kon: 'Kille', status: 'godkant', allergier: 'Jordnötter', skyddadIdentitet: false, incheckad: true, incheckadTid: '18:05', geofenceStatus: 'inne', utInAntal: 3, avstangd: false, avstangdTill: null, avstangdOrsak: '', avstangdGardId: null, foralderNamn: 'Karin Filipsson', foralderTelefon: '070-123 45 67' },
-            { id: 'u2', fornamn: 'Anna', efternamn: 'Andersson', fodelsear: 2011, kon: 'Tjej', status: 'godkant', allergier: '', skyddadIdentitet: false, incheckad: true, incheckadTid: '18:08', geofenceStatus: 'inne', utInAntal: 0, avstangd: false, avstangdTill: null, avstangdOrsak: '', avstangdGardId: null, foralderNamn: 'Per Andersson', foralderTelefon: '070-234 56 78' },
-            { id: 'u3', fornamn: 'Alex', efternamn: '(Skyddad)', fodelsear: 2009, kon: 'Vill ej uppge', status: 'godkant', allergier: 'Laktos', skyddadIdentitet: true, incheckad: true, incheckadTid: '18:10', geofenceStatus: 'inne', utInAntal: 1, avstangd: false, avstangdTill: null, avstangdOrsak: '', avstangdGardId: null, foralderNamn: 'Kontakt via samordnare', foralderTelefon: 'Skyddat nummer' },
-            { id: 'u4', fornamn: 'Sam', efternamn: '(Skyddad)', fodelsear: 2011, kon: 'Vill ej uppge', status: 'godkant', allergier: '', skyddadIdentitet: true, incheckad: true, incheckadTid: '18:12', geofenceStatus: 'inne', utInAntal: 0, avstangd: false, avstangdTill: null, avstangdOrsak: '', avstangdGardId: null, foralderNamn: 'Kontakt via samordnare', foralderTelefon: 'Skyddat nummer' }
+            {
+                id: 'u1', fornamn: 'Filip', efternamn: 'Filipsson', fodelsedatum: '2010-04-12', kon: 'Kille',
+                adress: 'Storgatan 14, Långsele', mobil: '070-111 22 33',
+                status: 'godkant', allergier: 'Jordnötter', viktigtAttVeta: 'Har egen EpiPen i ryggsäcken.',
+                skyddadIdentitet: false, incheckad: true, incheckadTid: '18:05', geofenceStatus: 'inne', utInAntal: 3,
+                avstangd: false, avstangdTill: null, avstangdOrsak: '', avstangdGardId: null,
+                vardnadshavare: [
+                    { namn: 'Karin Filipsson', telefon: '070-123 45 67', signerat: true },
+                    { namn: 'Anders Filipsson', telefon: '070-123 45 68', signerat: false }
+                ]
+            },
+            {
+                id: 'u2', fornamn: 'Anna', efternamn: 'Andersson', fodelsedatum: '2011-08-22', kon: 'Tjej',
+                adress: 'Björkvägen 3, Långsele', mobil: '070-222 33 44',
+                status: 'godkant', allergier: '', viktigtAttVeta: '',
+                skyddadIdentitet: false, incheckad: true, incheckadTid: '18:08', geofenceStatus: 'inne', utInAntal: 0,
+                avstangd: false, avstangdTill: null, avstangdOrsak: '', avstangdGardId: null,
+                vardnadshavare: [
+                    { namn: 'Per Andersson', telefon: '070-234 56 78', signerat: true }
+                ]
+            },
+            {
+                id: 'u3', fornamn: 'Alex', efternamn: '(Skyddad)', fodelsedatum: '2009-01-01', kon: 'Vill ej uppge',
+                adress: 'Skyddad uppgift', mobil: 'Skyddad uppgift',
+                status: 'godkant', allergier: 'Laktos', viktigtAttVeta: 'Kontakt enbart via samordnare.',
+                skyddadIdentitet: true, incheckad: true, incheckadTid: '18:10', geofenceStatus: 'inne', utInAntal: 1,
+                avstangd: false, avstangdTill: null, avstangdOrsak: '', avstangdGardId: null,
+                vardnadshavare: [
+                    { namn: 'Kontakt via samordnare', telefon: 'Skyddat nummer', signerat: true }
+                ]
+            },
+            {
+                id: 'u4', fornamn: 'Sam', efternamn: '(Skyddad)', fodelsedatum: '2011-01-01', kon: 'Vill ej uppge',
+                adress: 'Skyddad uppgift', mobil: 'Skyddad uppgift',
+                status: 'godkant', allergier: '', viktigtAttVeta: '',
+                skyddadIdentitet: true, incheckad: true, incheckadTid: '18:12', geofenceStatus: 'inne', utInAntal: 0,
+                avstangd: false, avstangdTill: null, avstangdOrsak: '', avstangdGardId: null,
+                vardnadshavare: [
+                    { namn: 'Kontakt via samordnare', telefon: 'Skyddat nummer', signerat: true }
+                ]
+            }
         ];
 
         const extra = [
-            ['Lucas', 'Eriksson', 2010, 'Kille', ''],
-            ['Maja', 'Johansson', 2011, 'Tjej', ''],
-            ['Hugo', 'Karlsson', 2009, 'Kille', 'Mjölkprotein'],
-            ['Ella', 'Nilsson', 2012, 'Tjej', ''],
-            ['William', 'Larsson', 2010, 'Kille', ''],
-            ['Astrid', 'Olsson', 2011, 'Tjej', ''],
-            ['Noah', 'Persson', 2009, 'Kille', ''],
-            ['Wilma', 'Svensson', 2010, 'Tjej', 'Gluten'],
-            ['Elias', 'Gustafsson', 2012, 'Kille', ''],
-            ['Freja', 'Pettersson', 2011, 'Tjej', ''],
-            ['Oliver', 'Jonsson', 2010, 'Kille', ''],
-            ['Ebba', 'Jansson', 2009, 'Tjej', ''],
-            ['Oscar', 'Hansson', 2011, 'Kille', ''],
-            ['Klara', 'Bengtsson', 2010, 'Tjej', ''],
-            ['Adam', 'Jönsson', 2012, 'Kille', ''],
-            ['Alma', 'Lind', 2011, 'Tjej', 'Nötter'],
-            ['Leo', 'Jakobsson', 2009, 'Kille', ''],
-            ['Agnes', 'Magnusson', 2010, 'Tjej', ''],
-            ['Viktor', 'Olofsson', 2011, 'Kille', ''],
-            ['Selma', 'Lindström', 2012, 'Tjej', ''],
-            ['Albin', 'Lindqvist', 2010, 'Kille', ''],
-            ['Elsa', 'Lindgren', 2009, 'Tjej', ''],
-            ['Isak', 'Berg', 2011, 'Kille', ''],
-            ['Signe', 'Axelsson', 2010, 'Tjej', ''],
-            ['Theo', 'Bergström', 2012, 'Kille', ''],
-            ['Vera', 'Lundberg', 2011, 'Tjej', ''],
-            ['Arvid', 'Lundgren', 2009, 'Kille', ''],
-            ['Stella', 'Mattsson', 2010, 'Tjej', ''],
-            ['Melker', 'Berglund', 2011, 'Kille', ''],
-            ['Nora', 'Fredriksson', 2010, 'Tjej', ''],
-            ['Emil', 'Sandberg', 2012, 'Kille', '']
+            ['Lucas', 'Eriksson', '2010-03-14', 'Kille', ''],
+            ['Maja', 'Johansson', '2011-05-09', 'Tjej', ''],
+            ['Hugo', 'Karlsson', '2009-11-28', 'Kille', 'Mjölkprotein'],
+            ['Ella', 'Nilsson', '2012-02-19', 'Tjej', ''],
+            ['William', 'Larsson', '2010-07-04', 'Kille', ''],
+            ['Astrid', 'Olsson', '2011-09-15', 'Tjej', ''],
+            ['Noah', 'Persson', '2009-06-21', 'Kille', ''],
+            ['Wilma', 'Svensson', '2010-12-03', 'Tjej', 'Gluten'],
+            ['Elias', 'Gustafsson', '2012-01-17', 'Kille', ''],
+            ['Freja', 'Pettersson', '2011-04-25', 'Tjej', ''],
+            ['Oliver', 'Jonsson', '2010-08-30', 'Kille', ''],
+            ['Ebba', 'Jansson', '2009-10-11', 'Tjej', ''],
+            ['Oscar', 'Hansson', '2011-03-07', 'Kille', ''],
+            ['Klara', 'Bengtsson', '2010-05-18', 'Tjej', ''],
+            ['Adam', 'Jönsson', '2012-06-22', 'Kille', ''],
+            ['Alma', 'Lind', '2011-07-29', 'Tjej', 'Nötter'],
+            ['Leo', 'Jakobsson', '2009-09-02', 'Kille', ''],
+            ['Agnes', 'Magnusson', '2010-11-14', 'Tjej', ''],
+            ['Viktor', 'Olofsson', '2011-01-23', 'Kille', ''],
+            ['Selma', 'Lindström', '2012-04-08', 'Tjej', ''],
+            ['Albin', 'Lindqvist', '2010-06-16', 'Kille', ''],
+            ['Elsa', 'Lindgren', '2009-08-19', 'Tjej', ''],
+            ['Isak', 'Berg', '2011-10-27', 'Kille', ''],
+            ['Signe', 'Axelsson', '2010-02-05', 'Tjej', ''],
+            ['Theo', 'Bergström', '2012-03-11', 'Kille', ''],
+            ['Vera', 'Lundberg', '2011-05-24', 'Tjej', ''],
+            ['Arvid', 'Lundgren', '2009-07-09', 'Kille', ''],
+            ['Stella', 'Mattsson', '2010-09-13', 'Tjej', ''],
+            ['Melker', 'Berglund', '2011-12-01', 'Kille', ''],
+            ['Nora', 'Fredriksson', '2010-01-28', 'Tjej', ''],
+            ['Emil', 'Sandberg', '2012-05-06', 'Kille', '']
         ];
 
         extra.forEach((row, i) => {
@@ -49,10 +86,13 @@
                 id: 'u' + (i + 5),
                 fornamn: row[0],
                 efternamn: row[1],
-                fodelsear: row[2],
+                fodelsedatum: row[2],
                 kon: row[3],
+                adress: `Skogsvägen ${i + 1}, Långsele`,
+                mobil: '070-444 10 ' + String(10 + i),
                 status: 'godkant',
                 allergier: row[4],
+                viktigtAttVeta: '',
                 skyddadIdentitet: false,
                 incheckad: true,
                 incheckadTid: `18:${min}`,
@@ -62,20 +102,24 @@
                 avstangdTill: null,
                 avstangdOrsak: '',
                 avstangdGardId: null,
-                foralderNamn: `Vårdnadshavare ${row[1]}`,
-                foralderTelefon: '070-555 00 ' + String(10 + i)
+                vardnadshavare: [
+                    { namn: `Vårdnadshavare ${row[1]}`, telefon: '070-555 00 ' + String(10 + i), signerat: true }
+                ]
             });
         });
 
-        // Ej incheckad, inväntar föräldrars godkännande
+        // Ej incheckad, inväntar föräldrars godkännande (två vårdnadshavare för test)
         list.push({
             id: 'u36',
             fornamn: 'Liam',
             efternamn: 'Lindberg',
-            fodelsear: 2012,
+            fodelsedatum: '2012-09-14',
             kon: 'Kille',
+            adress: 'Ängsvägen 8, Långsele',
+            mobil: '070-888 99 00',
             status: 'vantar_foralder',
             allergier: '',
+            viktigtAttVeta: 'Får gå hem själv kl 21:00.',
             skyddadIdentitet: false,
             incheckad: false,
             incheckadTid: null,
@@ -85,8 +129,10 @@
             avstangdTill: null,
             avstangdOrsak: '',
             avstangdGardId: null,
-            foralderNamn: 'Maria Lindberg',
-            foralderTelefon: '070-345 67 89'
+            vardnadshavare: [
+                { namn: 'Maria Lindberg', telefon: '070-345 67 89', signerat: false },
+                { namn: 'Johan Lindberg', telefon: '070-987 65 43', signerat: false }
+            ]
         });
 
         return list;
