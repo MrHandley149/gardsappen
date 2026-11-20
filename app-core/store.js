@@ -1,5 +1,5 @@
 (function () {
-    const STORAGE_KEY = 'gardsappen_live_v5';
+    const STORAGE_KEY = 'gardsappen_live_v6';
 
     function buildYouthList() {
         const list = [
@@ -181,6 +181,53 @@
             },
             aktivUngdomId: 'u1',
             ungdomar: buildYouthList(),
+            regler: {
+                gard: [
+                    { id: 'gr1', text: 'Här respekterar vi varandra' },
+                    { id: 'gr2', text: 'Vi tänker på ljudnivån så att alla trivs' },
+                    { id: 'gr3', text: 'Vi plockar undan efter oss och håller rent' },
+                    { id: 'gr4', text: 'Ingen energidryck (dryck sötad med socker eller sötningsmedel som innehåller över 15 mg koffein per 100 ml)' },
+                    { id: 'gr5', text: 'Alkohol-, nikotin-, vape- och drogfritt' }
+                ],
+                spel: [
+                    {
+                        id: 'sr1',
+                        kategori: 'Biljard',
+                        titel: '8-ball (Hel- och halvfärgade)',
+                        text: 'En spelare spränger. Den som först sänker ett klot får den sorten (hela 1–7 eller halva 9–15). Sänk alla dina egna klot först och sedan svarta 8:an i ett förvalt hål för att vinna. Vid fel (vit i hål, fel klot först eller miss) får motståndaren lägga den vita var som helst på bordet. Sänker du 8:an för tidigt, i fel hål eller med den vita förlorar du direkt.'
+                    },
+                    {
+                        id: 'sr2',
+                        kategori: 'Biljard',
+                        titel: '9-ball',
+                        text: 'Spelas med klot 1–9 i en diamant (1:an längst fram, 9:an i mitten). Du måste alltid träffa det klot på bordet som har lägst siffra först. Den som sänker 9:an på en godkänd stöt vinner – även via en kombination. Vid fel får motståndaren lägga den vita var som helst på bordet.'
+                    },
+                    {
+                        id: 'sr3',
+                        kategori: 'Biljard',
+                        titel: 'Färg (Sänka andras)',
+                        text: 'Alla spelare får varsin färg (en hel och en halv boll). Turordningen går efter ålder. Du ska sänka andras färger, inte dina egna. Sänker du en boll är det din tur igen. Den spelare som har sin färg kvar sist på bordet vinner.'
+                    },
+                    {
+                        id: 'sr4',
+                        kategori: 'Biljard',
+                        titel: 'Färg (Sänka egna + 8:an)',
+                        text: 'Varje spelare får en egen färg (t.ex. gul 1 & 9, blå 2 & 10). Du ska sänka dina två egna klot först och därefter svarta 8:an för att vinna.'
+                    },
+                    {
+                        id: 'sr5',
+                        kategori: 'Pingis',
+                        titel: 'Vanlig match (till 11)',
+                        text: 'Först till 11 poäng vinner setet. Vid 10–10 måste man vinna med två poäng (t.ex. 12–10). Varje spelare servar två gånger i rad, sedan byter man (vid 10–10 byter man efter varje poäng). Vid serve måste bollen studsa en gång på din egen sida och en gång på motståndarens sida.'
+                    },
+                    {
+                        id: 'sr6',
+                        kategori: 'Pingis',
+                        titel: 'Rundpingis',
+                        text: 'Alla spelare ställer sig på kö vid varsin kortsida. Du slår ett slag över nät och springer direkt runt bordet för att ställa dig sist i kön på andra sidan. Missar du bordet eller slår i nät åker du ut (eller tappar ett liv om ni kör med 3 liv). När två spelare är kvar spelas en snabb final.'
+                    }
+                ]
+            },
             geofenceLog: [
                 { tid: '19:18', namn: 'Lucas Eriksson', handelse: 'Lämnade zonen (50 m)' },
                 { tid: '19:14', namn: 'Filip Filipsson', handelse: 'Kom tillbaka in i zonen' },
