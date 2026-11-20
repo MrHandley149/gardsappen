@@ -1,5 +1,5 @@
 (function () {
-    const STORAGE_KEY = 'gardsappen_live_v6';
+    const STORAGE_KEY = 'gardsappen_live_v7';
 
     function buildYouthList() {
         const list = [
@@ -108,7 +108,6 @@
             });
         });
 
-        // Ej incheckad, inväntar föräldrars godkännande (två vårdnadshavare för test)
         list.push({
             id: 'u36',
             fornamn: 'Liam',
@@ -146,11 +145,19 @@
                 aktivGardId: 'garn-langsele',
                 avstangningScope: 'alla', // 'en' | 'alla' | 'specifika'
                 avstangningSpecifikaGardar: ['garn-langsele'],
+                serviceStatus: {
+                    avslutad: false,
+                    avslutMeddelande: 'Gårdsappen håller på att avvecklas för Sollefteå Kommun.',
+                    pausadHela: false,
+                    pausadeGardar: [],
+                    pausMeddelande: 'Gårdsappen är för tillfället pausad, vi har öppet som vanligt.'
+                },
                 gardar: [
                     {
                         id: 'garn-langsele',
                         namn: 'Gårn Långsele',
                         stadsdel: 'Östra Långsele',
+                        ansluten: true,
                         swishNummer: '123 456 78 90',
                         atersamlingsplats: 'Fotbollsplanen på baksidan',
                         oppen: true,
@@ -166,6 +173,7 @@
                         id: 'ramsele-gard',
                         namn: 'Ramsele Fritidsgård',
                         stadsdel: 'Ramsele',
+                        ansluten: true,
                         swishNummer: '123 987 65 43',
                         atersamlingsplats: 'Parkeringen vid skolan',
                         oppen: false,
@@ -280,9 +288,9 @@
                 ]
             },
             personal: [
-                { id: 'p1', namn: 'Sara Svensson', roll: 'Fritidsledare', gard: 'Gårn Långsele', aktiv: true },
-                { id: 'p2', namn: 'Johan Berg', roll: 'Fritidsledare', gard: 'Ramsele Fritidsgård', aktiv: true },
-                { id: 'p3', namn: 'Elin Nyström', roll: 'Vikarie', gard: 'Gårn Långsele', aktiv: false }
+                { id: 'p1', namn: 'Sara Svensson', roll: 'Fritidsledare', gardIds: ['garn-langsele'], allaGardar: false, aktiv: true },
+                { id: 'p2', namn: 'Johan Berg', roll: 'Fritidsledare', gardIds: ['ramsele-gard'], allaGardar: false, aktiv: true },
+                { id: 'p3', namn: 'Elin Nyström', roll: 'Vikarie', gardIds: [], allaGardar: true, aktiv: false }
             ],
             statistik: {
                 besokVecka: 412,
@@ -324,6 +332,11 @@
         },
         getAktivUngdom() {
             return state.ungdomar.find(u => u.id === state.aktivUngdomId) || state.ungdomar[0];
+        },
+        isGardPaused(gardId) {
+            const ss = state.tenant.serviceStatus;
+            if (!ss) return false;
+            return ss.pausadHela || (ss.pausadeGardar || []).includes(gardId);
         },
         displayName(u) {
             return u.skyddadIdentitet ? `${u.fornamn} [Skyddad ID]` : `${u.fornamn} ${u.efternamn}`;
