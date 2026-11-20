@@ -3,7 +3,7 @@
     const toastEl = document.getElementById('toast');
 
     let currentView = 'start';
-    let ledareSubView = null; // 'qr' | 'manuell' | 'kiosk' | 'resurser' | 'onskemal' | 'regler' | 'push' | 'banner' | 'aktivitet'
+    let ledareSubView = null;
     let ungdomRulesOpen = false;
     let manualSearch = '';
     let suspendFormOpen = false;
@@ -12,9 +12,10 @@
     let checkinSearch = '';
     let expandedContactId = null;
     let editingYouthId = null;
+    let editingStaffId = null;
     let parentSignerIndex = 0;
     let editRutin = { oppning: false, stangning: false };
-    let cart = {}; // { kioskItemId: antal }
+    let cart = {};
     let evacSafeIds = new Set();
     let statPeriod = 'vecka';
     let toastTimer = null;
@@ -46,6 +47,7 @@
         suspendFormOpen = false;
         expandedContactId = null;
         editingYouthId = null;
+        editingStaffId = null;
         window.scrollTo(0, 0);
         render();
     }
@@ -56,10 +58,24 @@
             <div class="topbar">
                 <div>
                     <div class="topbar-title">${esc(title)}</div>
-                    <div class="muted" style="font-size:12px;">${esc(gard.namn)}</div>
+                    <div class="muted" style="font-size:12px;">${esc(gard ? gard.namn : '')}</div>
                 </div>
                 <div class="topbar-actions">
                     ${showBack ? `<button class="btn-link" onclick="App.go('start')">Byt vy</button>` : ''}
+                </div>
+            </div>
+        `;
+    }
+
+    function renderDecommissionedScreen(title) {
+        const ss = Store.get().tenant.serviceStatus;
+        return `
+            <div class="app-shell">
+                ${topbar(title)}
+                <div class="surface" style="margin-top:32px; border:2px solid #d32f2f; text-align:center; padding:28px 20px;">
+                    <span class="pill pill-red" style="margin-bottom:12px;">Tjänsten avvecklas</span>
+                    <h2 style="margin-bottom:10px;">Inloggning pausad</h2>
+                    <p style="font-size:16px; font-weight:600;">${esc(ss.avslutMeddelande)}</p>
                 </div>
             </div>
         `;
@@ -214,8 +230,10 @@
     function renderStart() {
         const s = Store.get();
         const gard = Store.getAktivGard();
-        const gardOptions = s.tenant.gardar.map(g =>
-            `<option value="${g.id}" ${g.id === gard.id ? 'selected' : ''}>${esc(g.namn)} (${esc(g.stadsdel)})</option>`
+        const ss = s.tenant.serviceStatus;
+        const anslutna = s.tenant.gardar.filter(g => g.ansluten !== false);
+        const gardOptions = (anslutna.length > 0 ? anslutna : s.tenant.gardar).map(g =>
+            `<option value="${g.id}" ${gard && g.id === gard.id ? 'selected' : ''}>${esc(g.namn)} (${esc(g.stadsdel)})</option>`
         ).join('');
 
         return `
@@ -223,7 +241,20 @@
                 <div style="padding-top: 24px;">
                     <p class="kicker">${esc(s.tenant.kommunNamn)}</p>
                     <h1>Gårdsappen</h1>
-                    <p class="muted" style="margin-bottom: 28px;">Fullskalig app med lokal testdata. Alla ändringar synkas mellan vyerna.</p>
+                    <p class="muted" style="margin-bottom: 24px;">Fullskalig app med lokal testdata. Alla ändringar synkas mellan vyerna.</p>
+
+                    ${ss && ss.avslutad ? `
+                        <div class="surface" style="margin-bottom:20px; border:2px solid #d32f2f;">
+                            <span class="pill pill-red" style="margin-bottom:8px;">Avveckling aktiv</span>
+                            <p style="font-weight:700;">${esc(ss.avslutMeddelande)}</p>
+                            <p class="muted" style="font-size:12px; margin-top:4px;">Endast Chef kan logga in.</p>
+                        </div>
+                    ` : (gard && Store.isGardPaused(gard.id)) ? `
+                        <div class="surface" style="margin-bottom:20px; border:2px solid #e65100;">
+                            <span class="pill pill-amber" style="margin-bottom:8px;">Pausad</span>
+                            <p style="font-weight:700;">${esc(ss.pausMeddelande)}</p>
+                        </div>
+                    ` : ''}
 
                     <div class="field">
                         <label class="field-label" for="gard-select">Aktiv gård</label>
@@ -251,6 +282,23 @@
     function renderUngdom() {
         const s = Store.get();
         const gard = Store.getAktivGard();
+        const ss = s.tenant.serviceStatus;
+
+        if (ss && ss.avslutad) return renderDecommissionedScreen('Ungdom');
+
+        if (gard && Store.isGardPaused(gard.id)) {
+            return `
+                <div class="app-shell">
+                    ${topbar('Ungdom')}
+                    <div class="surface" style="margin-top:32px; border:2px solid #111; text-align:center; padding:28px 20px;">
+                        <span class="pill pill-amber" style="margin-bottom:12px;">Pausad</span>
+                        <h2 style="margin-bottom:10px;">${esc(gard.namn)}</h2>
+                        <p style="font-size:16px; font-weight:600;">${esc(ss.pausMeddelande)}</p>
+                    </div>
+                </div>
+            `;
+        }
+
         const u = Store.getAktivUngdom();
         const flags = gard.featureFlags;
         const fullName = Store.displayName(u);
@@ -442,10 +490,23 @@
         `;
     }
 
-    // ==================== VY: FRITIDSLEDARE ====================
+    // ==================== VY: FRITIDSLEDARE (LÅST) ====================
     function renderLedare() {
         const s = Store.get();
         const gard = Store.getAktivGard();
+        const ss = s.tenant.serviceStatus;
+
+        if (ss && ss.avslutad) return renderDecommissionedScreen('Fritidsledare');
+
+        const isPaused = gard && Store.isGardPaused(gard.id);
+        const pauseBannerHtml = isPaused ? `
+            <div class="surface" style="margin-bottom:20px; border:2px solid #e65100; background:#fff8e1;">
+                <span class="pill pill-amber" style="margin-bottom:8px;">Pausad av chef</span>
+                <p style="font-weight:800; margin-bottom:4px;">Sköt statistik via manuell närvarolista.</p>
+                <p class="muted" style="font-size:13px;">Meddelande till besökare: "${esc(ss.pausMeddelande)}"</p>
+            </div>
+        ` : '';
+
         const incheckade = s.ungdomar.filter(u => u.incheckad);
         const uteUrZon = incheckade.filter(u => u.geofenceStatus === 'ute_tillfalligt');
         const springerUtIn = incheckade.filter(u => (u.utInAntal || 0) >= 2);
@@ -803,6 +864,7 @@
         return `
             <div class="app-shell">
                 ${topbar('Fritidsledare')}
+                ${pauseBannerHtml}
 
                 <div class="row" style="margin-bottom:20px;">
                     <div>
@@ -935,10 +997,25 @@
         const s = Store.get();
         const gard = Store.getAktivGard();
         const flags = gard.featureFlags;
+        const ss = s.tenant.serviceStatus;
         const besok = statPeriod === 'vecka' ? s.statistik.besokVecka : s.statistik.besokManad;
         const scope = s.tenant.avstangningScope || 'alla';
         const specifika = s.tenant.avstangningSpecifikaGardar || [];
         const gardRegler = (s.regler && s.regler.gard) || [];
+        const anslutnaGardar = s.tenant.gardar.filter(g => g.ansluten !== false);
+
+        const killeAntal = s.ungdomar.filter(u => u.kon === 'Kille').length;
+        const tjejAntal = s.ungdomar.filter(u => u.kon === 'Tjej').length;
+        const ejUppgeAntal = s.ungdomar.filter(u => u.kon === 'Vill ej uppge').length;
+
+        function staffGardText(p) {
+            if (p.allaGardar) return 'Alla gårdar';
+            const names = (p.gardIds || []).map(id => {
+                const found = s.tenant.gardar.find(g => g.id === id);
+                return found ? found.namn : id;
+            });
+            return names.length > 0 ? names.join(', ') : 'Ingen gård tilldelad';
+        }
 
         return `
             <div class="app-shell">
@@ -958,8 +1035,111 @@
                         <div class="stat-label">Besökare</div>
                     </div>
                     <div class="stat-box">
-                        <div class="stat-num">${s.tenant.gardar.length}</div>
-                        <div class="stat-label">Aktiva gårdar</div>
+                        <div class="stat-num">${anslutnaGardar.length}</div>
+                        <div class="stat-label">Anslutna gårdar</div>
+                    </div>
+                </div>
+
+                <div class="surface" style="margin-top:12px;">
+                    <p class="kicker">Könsfördelning (registrerade)</p>
+                    <p class="muted" style="margin-bottom:14px;">Kille: <strong>${killeAntal}</strong> • Tjej: <strong>${tjejAntal}</strong> • Vill ej uppge: <strong>${ejUppgeAntal}</strong></p>
+                    <div class="grid-2">
+                        <button class="btn-secondary" style="min-height:46px;" onclick="App.exportStatsExcel()">Exportera Excel</button>
+                        <button class="btn-secondary" style="min-height:46px;" onclick="App.exportStatsPdf()">Exportera PDF</button>
+                    </div>
+                </div>
+
+                <div class="section">
+                    <div class="section-header">
+                        <h2>Anslutna fritidsgårdar</h2>
+                    </div>
+                    <div class="surface">
+                        <ul class="list" style="margin-bottom:14px;">
+                            ${s.tenant.gardar.map(g => {
+                                const ansluten = g.ansluten !== false;
+                                return `
+                                    <li class="list-item">
+                                        <div>
+                                            <strong>${esc(g.namn)}</strong>
+                                            <span class="pill ${ansluten ? 'pill-green' : 'pill-red'}" style="margin-left:6px;">${ansluten ? 'Ansluten' : 'Av-ansluten'}</span>
+                                            <div class="muted" style="font-size:12px;">${esc(g.stadsdel)}</div>
+                                        </div>
+                                        <button class="btn-small ${ansluten ? 'danger' : 'dark'}" onclick="App.toggleGardConnection('${g.id}')">
+                                            ${ansluten ? 'Av-anslut' : 'Återanslut'}
+                                        </button>
+                                    </li>
+                                `;
+                            }).join('')}
+                        </ul>
+                        <div class="grid-2" style="margin-bottom:10px;">
+                            <input type="text" id="new-gard-name" placeholder="Ny gård (namn)">
+                            <input type="text" id="new-gard-area" placeholder="Stadsdel / ort">
+                        </div>
+                        <button class="btn-primary" style="min-height:46px;" onclick="App.addGard()">+ Anslut ny gård</button>
+                    </div>
+                </div>
+
+                <div class="section">
+                    <div class="section-header">
+                        <h2>Personal & Allokering</h2>
+                        <button class="btn-small dark" onclick="App.addStaff()">+ Lägg till</button>
+                    </div>
+                    <ul class="list">
+                        ${s.personal.map(p => `
+                            <li class="list-item" style="flex-direction:column; align-items:stretch;">
+                                <div class="row">
+                                    <div>
+                                        <h3>${esc(p.namn)} ${!p.aktiv ? '<span class="pill pill-amber">Pausad</span>' : ''}</h3>
+                                        <div class="muted">${esc(p.roll)} • ${esc(staffGardText(p))}</div>
+                                    </div>
+                                    <div class="row" style="gap:6px;">
+                                        <button class="btn-small" onclick="App.toggleEditStaff('${p.id}')">Gårdar</button>
+                                        <button class="btn-small" onclick="App.toggleStaff('${p.id}')">${p.aktiv ? 'Pausa' : 'Aktivera'}</button>
+                                        <button class="btn-small danger" onclick="App.deleteStaff('${p.id}')">Ta bort</button>
+                                    </div>
+                                </div>
+                                ${editingStaffId === p.id ? `
+                                    <div class="surface" style="margin-top:10px; padding:12px 14px;">
+                                        <p class="kicker">Allokera ${esc(p.namn)} till gårdar</p>
+                                        <label class="check-row" style="padding:8px 0;">
+                                            <input type="checkbox" ${p.allaGardar ? 'checked' : ''} onchange="App.toggleStaffAllGardar('${p.id}')">
+                                            <span>Alla gårdar i kommunen</span>
+                                        </label>
+                                        ${!p.allaGardar ? s.tenant.gardar.map(g => `
+                                            <label class="check-row" style="padding:8px 0;">
+                                                <input type="checkbox" ${(p.gardIds || []).includes(g.id) ? 'checked' : ''} onchange="App.toggleStaffGard('${p.id}', '${g.id}')">
+                                                <span>${esc(g.namn)}</span>
+                                            </label>
+                                        `).join('') : ''}
+                                    </div>
+                                ` : ''}
+                            </li>
+                        `).join('')}
+                    </ul>
+                </div>
+
+                <div class="section">
+                    <div class="section-header">
+                        <h2>Pausa tjänsten / gårdar</h2>
+                    </div>
+                    <div class="surface">
+                        <div class="field">
+                            <label class="field-label" for="pause-msg-input">Meddelande till besökare vid paus</label>
+                            <input type="text" id="pause-msg-input" value="${esc(ss.pausMeddelande)}">
+                        </div>
+                        <button class="btn-small dark" style="margin-bottom:16px;" onclick="App.savePauseMessage()">Spara meddelande</button>
+
+                        <label class="check-row">
+                            <input type="checkbox" ${ss.pausadHela ? 'checked' : ''} onchange="App.togglePauseAll()">
+                            <span><strong>Pausa hela tjänsten (alla gårdar)</strong></span>
+                        </label>
+                        ${!ss.pausadHela ? s.tenant.gardar.map(g => `
+                            <label class="check-row">
+                                <input type="checkbox" ${(ss.pausadeGardar || []).includes(g.id) ? 'checked' : ''} onchange="App.togglePauseGard('${g.id}')">
+                                <span>Pausa ${esc(g.namn)}</span>
+                            </label>
+                        `).join('') : ''}
+                        <p class="muted" style="font-size:12px; margin-top:10px;">Vid paus skickas pushnotis till berörda fritidsledare med instruktionen: "Sköt statistik via manuell närvarolista."</p>
                     </div>
                 </div>
 
@@ -1030,23 +1210,26 @@
 
                 <div class="section">
                     <div class="section-header">
-                        <h2>Personal</h2>
-                        <button class="btn-small dark" onclick="App.addStaff()">+ Lägg till</button>
+                        <h2>Dataägarskap & Avveckling</h2>
                     </div>
-                    <ul class="list">
-                        ${s.personal.map(p => `
-                            <li class="list-item">
-                                <div>
-                                    <h3>${esc(p.namn)} ${!p.aktiv ? '<span class="pill pill-amber">Pausad</span>' : ''}</h3>
-                                    <div class="muted">${esc(p.roll)} • ${esc(p.gard)}</div>
-                                </div>
-                                <div class="row" style="gap:6px;">
-                                    <button class="btn-small" onclick="App.toggleStaff('${p.id}')">${p.aktiv ? 'Pausa' : 'Aktivera'}</button>
-                                    <button class="btn-small danger" onclick="App.deleteStaff('${p.id}')">Ta bort</button>
-                                </div>
-                            </li>
-                        `).join('')}
-                    </ul>
+                    <div class="surface">
+                        <p class="kicker">GDPR & Export</p>
+                        <div class="grid-2" style="margin-bottom:20px;">
+                            <button class="btn-secondary" style="min-height:46px;" onclick="App.exportAllData()">Exportera all data</button>
+                            <button class="btn-secondary" style="min-height:46px; border-color:#d32f2f; color:#d32f2f;" onclick="App.deleteAllData()">Radera all data</button>
+                        </div>
+
+                        <div style="padding-top:16px; border-top:1px solid #e0e0e0;">
+                            <p class="kicker">Avsluta tjänsten helt</p>
+                            <div class="field">
+                                <label class="field-label" for="decomm-msg-input">Avvecklingsmeddelande (visas för alla)</label>
+                                <input type="text" id="decomm-msg-input" value="${esc(ss.avslutMeddelande)}">
+                            </div>
+                            <button class="btn-primary" style="background:${ss.avslutad ? '#111' : '#d32f2f'}; border-color:${ss.avslutad ? '#111' : '#d32f2f'};" onclick="App.toggleDecommission()">
+                                ${ss.avslutad ? 'Återaktivera tjänsten' : 'Avsluta tjänsten helt och hållet'}
+                            </button>
+                        </div>
+                    </div>
                 </div>
 
                 <div class="section">
@@ -1067,7 +1250,14 @@
     // ==================== VY: FÖRÄLDER ====================
     function renderForalder() {
         const s = Store.get();
+        if (s.tenant.serviceStatus && s.tenant.serviceStatus.avslutad) {
+            return renderDecommissionedScreen('Förälder');
+        }
+
         const u = s.ungdomar.find(x => x.id === 'u36') || s.ungdomar[0];
+        if (!u) {
+            return `<div class="app-shell">${topbar('Förälder')}<p class="muted">Ingen ungdomsdata finns i systemet.</p></div>`;
+        }
         const godkant = u.status === 'godkant';
         const vh = u.vardnadshavare || [];
         if (parentSignerIndex >= vh.length) parentSignerIndex = 0;
@@ -1185,6 +1375,180 @@
             showToast('All testdata återställd');
             render();
         },
+        // --- CHEF: EXPORT, GÅRDAR, PAUS, AVVECKLING, GDPR ---
+        exportStatsExcel() {
+            const s = Store.get();
+            const kille = s.ungdomar.filter(u => u.kon === 'Kille').length;
+            const tjej = s.ungdomar.filter(u => u.kon === 'Tjej').length;
+            const ej = s.ungdomar.filter(u => u.kon === 'Vill ej uppge').length;
+            const rows = [
+                ['Kommun', s.tenant.kommunNamn],
+                ['Period', statPeriod === 'vecka' ? 'Denna vecka' : 'Denna månad'],
+                ['Besökare', statPeriod === 'vecka' ? s.statistik.besokVecka : s.statistik.besokManad],
+                ['Anslutna gårdar', s.tenant.gardar.filter(g => g.ansluten !== false).length],
+                ['Kille', kille],
+                ['Tjej', tjej],
+                ['Vill ej uppge', ej]
+            ];
+            const csv = '\uFEFF' + rows.map(r => r.join(';')).join('\n');
+            const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `gardsappen-statistik-${statPeriod}.csv`;
+            a.click();
+            URL.revokeObjectURL(url);
+            Store.log('Statistik exporterad till Excel (CSV)');
+            showToast('Excel-fil nedladdad');
+        },
+        exportStatsPdf() {
+            const s = Store.get();
+            const besok = statPeriod === 'vecka' ? s.statistik.besokVecka : s.statistik.besokManad;
+            const kille = s.ungdomar.filter(u => u.kon === 'Kille').length;
+            const tjej = s.ungdomar.filter(u => u.kon === 'Tjej').length;
+            const ej = s.ungdomar.filter(u => u.kon === 'Vill ej uppge').length;
+            const win = window.open('', '_blank');
+            if (!win) return showToast('Tillåt popup-fönster för PDF-export');
+            win.document.write(`
+                <html><head><title>Statistik – ${esc(s.tenant.kommunNamn)}</title>
+                <style>body{font-family:sans-serif;padding:32px;color:#111;} h1{margin-bottom:8px;} table{width:100%;border-collapse:collapse;margin-top:20px;} td,th{border:1px solid #ddd;padding:10px;text-align:left;}</style>
+                </head><body>
+                <h1>Statistikrapport – ${esc(s.tenant.kommunNamn)}</h1>
+                <p>Period: ${statPeriod === 'vecka' ? 'Denna vecka' : 'Denna månad'}</p>
+                <table>
+                    <tr><th>Mätvärde</th><th>Antal</th></tr>
+                    <tr><td>Besökare</td><td>${besok}</td></tr>
+                    <tr><td>Anslutna gårdar</td><td>${s.tenant.gardar.filter(g => g.ansluten !== false).length}</td></tr>
+                    <tr><td>Kille</td><td>${kille}</td></tr>
+                    <tr><td>Tjej</td><td>${tjej}</td></tr>
+                    <tr><td>Vill ej uppge</td><td>${ej}</td></tr>
+                </table>
+                <script>window.print();</script></body></html>
+            `);
+            win.document.close();
+            Store.log('Statistik exporterad till PDF');
+        },
+        addGard() {
+            const namn = (document.getElementById('new-gard-name')?.value || '').trim();
+            const stadsdel = (document.getElementById('new-gard-area')?.value || '').trim() || 'Centrum';
+            if (!namn) return showToast('Ange namn på gården');
+            Store.get().tenant.gardar.push({
+                id: 'g-' + Date.now(),
+                namn,
+                stadsdel,
+                ansluten: true,
+                swishNummer: '123 000 00 00',
+                atersamlingsplats: 'Skolgården',
+                oppen: false,
+                banner: `VÄLKOMMEN TILL ${namn.toUpperCase()}!`,
+                featureFlags: { kiosk: true, koer: true, lag: true, onskemal: true }
+            });
+            Store.log(`Ny gård ansluten: ${namn}`);
+            showToast(`${namn} ansluten`);
+            render();
+        },
+        toggleGardConnection(gardId) {
+            const g = Store.get().tenant.gardar.find(x => x.id === gardId);
+            if (!g) return;
+            g.ansluten = g.ansluten === false ? true : false;
+            Store.log(`${g.namn} ${g.ansluten ? 'återansluten' : 'av-ansluten'}`);
+            showToast(`${g.namn} ${g.ansluten ? 'återansluten' : 'av-ansluten'}`);
+            render();
+        },
+        toggleEditStaff(id) {
+            editingStaffId = editingStaffId === id ? null : id;
+            render();
+        },
+        toggleStaffAllGardar(id) {
+            const p = Store.get().personal.find(x => x.id === id);
+            if (!p) return;
+            p.allaGardar = !p.allaGardar;
+            Store.log(`${p.namn} allokerad till ${p.allaGardar ? 'alla gårdar' : 'utvalda gårdar'}`);
+            render();
+        },
+        toggleStaffGard(staffId, gardId) {
+            const p = Store.get().personal.find(x => x.id === staffId);
+            if (!p) return;
+            if (!p.gardIds) p.gardIds = [];
+            const idx = p.gardIds.indexOf(gardId);
+            if (idx >= 0) p.gardIds.splice(idx, 1);
+            else p.gardIds.push(gardId);
+            Store.save();
+            render();
+        },
+        savePauseMessage() {
+            const val = (document.getElementById('pause-msg-input')?.value || '').trim();
+            if (!val) return;
+            Store.get().tenant.serviceStatus.pausMeddelande = val;
+            Store.save();
+            showToast('Pausmeddelande sparat');
+        },
+        togglePauseAll() {
+            const ss = Store.get().tenant.serviceStatus;
+            ss.pausadHela = !ss.pausadHela;
+            Store.log(ss.pausadHela ? 'Hela tjänsten pausad – pushnotis skickad till ledare (manuell närvarolista)' : 'Tjänsten av-pausad');
+            showToast(ss.pausadHela ? 'Hela tjänsten pausad. Pushnotis skickad till ledarna.' : 'Tjänsten är igång igen.');
+            render();
+        },
+        togglePauseGard(gardId) {
+            const ss = Store.get().tenant.serviceStatus;
+            if (!ss.pausadeGardar) ss.pausadeGardar = [];
+            const idx = ss.pausadeGardar.indexOf(gardId);
+            const g = Store.get().tenant.gardar.find(x => x.id === gardId);
+            if (idx >= 0) {
+                ss.pausadeGardar.splice(idx, 1);
+                Store.log(`${g ? g.namn : gardId} av-pausad`);
+                showToast(`${g ? g.namn : 'Gård'} av-pausad`);
+            } else {
+                ss.pausadeGardar.push(gardId);
+                Store.log(`${g ? g.namn : gardId} pausad – pushnotis skickad till ledare (manuell närvarolista)`);
+                showToast(`${g ? g.namn : 'Gård'} pausad. Pushnotis skickad till berörda ledare.`);
+            }
+            render();
+        },
+        exportAllData() {
+            const json = JSON.stringify(Store.get(), null, 2);
+            const blob = new Blob([json], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `gardsappen-all-data-${new Date().toISOString().slice(0, 10)}.json`;
+            a.click();
+            URL.revokeObjectURL(url);
+            Store.log('All data exporterad (JSON)');
+            showToast('All data exporterad');
+        },
+        deleteAllData() {
+            if (!confirm('Vill du verkligen radera ALL person- och verksamhetsdata (ungdomar, loggar, önskemål, notiser)?')) return;
+            const s = Store.get();
+            s.ungdomar = [];
+            s.geofenceLog = [];
+            s.monsterAlerts = [];
+            s.onskemal = [];
+            s.notiser = [];
+            s.resurser.forEach(r => { r.ko = []; });
+            s.aktiviteter = [];
+            Store.log('ALL data raderad av chef (GDPR)');
+            showToast('All data raderad');
+            render();
+        },
+        toggleDecommission() {
+            const ss = Store.get().tenant.serviceStatus;
+            const msg = (document.getElementById('decomm-msg-input')?.value || '').trim();
+            if (msg) ss.avslutMeddelande = msg;
+            if (!ss.avslutad) {
+                if (!confirm('Avsluta tjänsten helt? Alla inloggningar utom chefens pausas.')) return;
+                ss.avslutad = true;
+                Store.log('Tjänsten satt i avvecklingsläge av chef');
+                showToast('Tjänsten är nu satt i avvecklingsläge');
+            } else {
+                ss.avslutad = false;
+                Store.log('Tjänsten återaktiverad av chef');
+                showToast('Tjänsten återaktiverad');
+            }
+            render();
+        },
+        // --- ÖVRIGA ACTIONS ---
         toggleUngdomRules() {
             ungdomRulesOpen = !ungdomRulesOpen;
             render();
@@ -1697,7 +2061,8 @@
                 id: 'p' + Date.now(),
                 namn: namn.trim(),
                 roll: 'Fritidsledare',
-                gard: Store.getAktivGard().namn,
+                gardIds: [Store.getAktivGard().id],
+                allaGardar: false,
                 aktiv: true
             });
             Store.log(`Personal tillagd: ${namn.trim()}`);
@@ -1730,7 +2095,6 @@
             if (vh[parentSignerIndex]) {
                 vh[parentSignerIndex].signerat = true;
             }
-            // Alternativ A: det räcker att en vårdnadshavare signerar
             u.status = 'godkant';
             const signerName = vh[parentSignerIndex] ? vh[parentSignerIndex].namn : 'Vårdnadshavare';
             Store.log(`Gårdskort signerat med BankID av ${signerName} för ${u.fornamn}`);
